@@ -3,7 +3,7 @@
 import { writeFileSync } from "fs"
 import { resolve } from "path"
 
-const BASE_URL = "https://market-insight-gemini-bot.lovable.app"
+const BASE_URL = "https://stocksensee.netlify.app"
 
 interface SitemapEntry {
   path: string

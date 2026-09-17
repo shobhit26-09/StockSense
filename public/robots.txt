@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://market-insight-gemini-bot.lovable.app/sitemap.xml
+Sitemap: https://stocksensee.netlify.app/sitemap.xml

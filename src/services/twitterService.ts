@@ -159,7 +159,7 @@ export class TwitterService {
             tweetUrl: link || '#',
             source: sourceName,
             publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-            sentiment: this.analyzeSentiment(cleanTitle + ' ' + cleanDescription),
+            sentiment: this.analyzeNewsSentiment(cleanTitle + ' ' + cleanDescription),
             sentimentScore: this.getSentimentScore(cleanTitle + ' ' + cleanDescription),
             category: this.categorizeNews(cleanTitle + ' ' + cleanDescription),
             isBreaking: cleanTitle.toLowerCase().includes('break') || cleanTitle.includes('🚨'),
@@ -190,7 +190,7 @@ export class TwitterService {
       .trim();
   }
 
-  private analyzeSentiment(text: string): 'positive' | 'negative' | 'neutral' {
+  analyzeNewsSentiment(text: string): 'positive' | 'negative' | 'neutral' {
     const positiveWords = ['surge', 'rally', 'gain', 'up', 'rise', 'high', 'strong', 'good', 'beat', 'growth', 'bullish', 'record', 'soar', 'jump', 'boost', 'profit'];
     const negativeWords = ['fall', 'drop', 'down', 'decline', 'low', 'weak', 'loss', 'bear', 'crash', 'sell', 'slump', 'plunge', 'sink', 'tumble'];
     
@@ -204,7 +204,7 @@ export class TwitterService {
   }
 
   private getSentimentScore(text: string): number {
-    const sentiment = this.analyzeSentiment(text);
+    const sentiment = this.analyzeNewsSentiment(text);
     const baseScore = sentiment === 'positive' ? 0.7 : sentiment === 'negative' ? -0.4 : 0.1;
     return baseScore + (Math.random() - 0.5) * 0.2;
   }

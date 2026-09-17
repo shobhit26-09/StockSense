@@ -2,21 +2,14 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Plus, X } from 'lucide-react';
 import { fetchMultipleQuotesRacing } from '@/services/multiSourceDataService';
+import { loadWatchlist, normalizeSymbol, saveWatchlist } from '@/lib/watchlist';
 
-const STORAGE_KEY = 'sf_watchlist_v1';
-const DEFAULT = ['RELIANCE.NS', 'HDFCBANK.NS', 'TCS.NS', 'INFY.NS', 'ICICIBANK.NS', 'TATAMOTORS.NS'];
 
-const loadList = (): string[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return DEFAULT;
-};
+
 
 const QuickWatchlist = () => {
   const navigate = useNavigate();
-  const [list, setList] = useState<string[]>(loadList());
+  const [list, setList] = useState<string[]>(() => loadWatchlist());
   const [data, setData] = useState<Map<string, any>>(new Map());
   const [input, setInput] = useState('');
 
@@ -33,13 +26,12 @@ const QuickWatchlist = () => {
   }, [fetchAll]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    saveWatchlist(list);
   }, [list]);
 
   const add = () => {
-    let s = input.trim().toUpperCase();
+    const s = normalizeSymbol(input);
     if (!s) return;
-    if (!s.includes('.NS') && !s.includes('.BO') && !s.startsWith('^')) s = `${s}.NS`;
     if (!list.includes(s)) setList([...list, s]);
     setInput('');
   };
@@ -64,7 +56,7 @@ const QuickWatchlist = () => {
           placeholder="Add ticker (e.g. SBIN)"
           className="flex-1 bg-secondary/30 border border-border/40 rounded px-2 py-1 text-[11px] font-mono outline-none focus:border-primary/50"
         />
-        <button onClick={add} className="px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors">
+        <button onClick={add} aria-label="Add ticker to watchlist" className="px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors">
           <Plus className="w-3 h-3" />
         </button>
       </div>
@@ -91,7 +83,8 @@ const QuickWatchlist = () => {
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); remove(sym); }}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                  aria-label={`Remove ${display} from watchlist`}
+                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-destructive transition-all"
                 >
                   <X className="w-3 h-3" />
                 </button>

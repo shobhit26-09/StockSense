@@ -90,6 +90,48 @@ function getBackup(symbol: string) {
   };
 }
 
+
+const NEWS_SOURCES = [
+  { url: 'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms', name: 'Economic Times' },
+  { url: 'https://www.moneycontrol.com/rss/marketreports.xml', name: 'Moneycontrol' },
+  { url: 'https://www.livemint.com/rss/markets', name: 'Mint' },
+];
+
+const decodeXml = (value: string) => value
+  .replace(/<!\[CDATA\[|\]\]>/g, '')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+
+const xmlValue = (item: string, tag: string) => {
+  const match = item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+  return match ? decodeXml(match[1]) : '';
+};
+
+async function handleNews() {
+  const settled = await Promise.allSettled(NEWS_SOURCES.map(async (source) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch(source.url, { headers: { 'User-Agent': UA, Accept: 'application/rss+xml, application/xml, text/xml' }, signal: controller.signal });
+      if (!response.ok) throw new Error(`${source.name} returned ${response.status}`);
+      const xml = await response.text();
+      return [...xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/gi)].slice(0, 6).map((match, index) => {
+        const title = xmlValue(match[1], 'title');
+        const url = xmlValue(match[1], 'link');
+        const publishedAt = xmlValue(match[1], 'pubDate');
+        return { id: `${source.name}-${index}-${title.slice(0, 24)}`, title, description: xmlValue(match[1], 'description'), url, source: source.name, publishedAt: publishedAt || new Date().toISOString(), dataMode: 'live' };
+      }).filter((item) => item.title && /^https:\/\//.test(item.url));
+    } finally { clearTimeout(timeout); }
+  }));
+  const seen = new Set<string>();
+  const articles = settled.flatMap((result) => result.status === 'fulfilled' ? result.value : [])
+    .filter((article) => { const key = article.title.toLowerCase().replace(/\W/g, '').slice(0, 60); if (seen.has(key)) return false; seen.add(key); return true; })
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)).slice(0, 20);
+  if (!articles.length) throw new Error('All news providers are unavailable');
+  return { articles, fetchedAt: new Date().toISOString(), source: 'Publisher RSS feeds' };
+}
+
 // Batch quote handler
 async function handleBatchQuotes(symbols: string[]) {
   const results: Record<string, any> = {};
@@ -440,6 +482,8 @@ serve(async (req) => {
     let result: any;
     if (type === 'batch-quotes' && Array.isArray(symbols)) {
       result = await handleBatchQuotes(symbols);
+    } else if (type === 'news') {
+      result = await handleNews();
     } else if (type === 'top-movers') {
       result = await handleTopMovers();
     } else if (type === 'mmi') {
@@ -458,7 +502,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid type' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ...result, providerPolicy: 'free-public-sources', fetchedAt: new Date().toISOString() }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' },
+    });
   } catch (error) {
     console.error('[MarketData] Error:', error);
     return new Response(JSON.stringify({ error: 'Internal error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
