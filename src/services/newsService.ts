@@ -1,4 +1,5 @@
-import { twitterService, TwitterNewsItem } from './twitterService';
+import { twitterService } from './twitterService';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface RealTimeNewsItem {
   id: string;
@@ -34,7 +35,17 @@ export class NewsService {
     try {
       console.log('NewsService: Fetching real news from CNBCTV18Live Twitter...');
       
-      // Fetch real tweets from Twitter/X CNBCTV18Live
+      // Fetch publisher RSS feeds server-side first, avoiding unreliable browser CORS proxies.
+      const { data, error } = await supabase.functions.invoke('fetch-market-data', { body: { type: 'news' } });
+      if (!error && Array.isArray(data?.articles) && data.articles.length > 0) {
+        return data.articles.map((article: any) => ({
+          ...article,
+          sentiment: twitterService.analyzeNewsSentiment(`${article.title} ${article.description}`),
+          sentimentScore: 0,
+          category: 'Market',
+        }));
+      }
+
       const twitterNews = await twitterService.fetchLatestTwitterNews();
       
       if (twitterNews.length === 0) {

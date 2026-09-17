@@ -6,6 +6,7 @@ import PremiumTopMovers from '@/components/PremiumTopMovers';
 import PremiumNewsFeed from '@/components/PremiumNewsFeed';
 import { Link } from 'react-router-dom';
 import Seo from '@/components/Seo';
+import ShowcaseNotice from '@/components/ShowcaseNotice';
 
 const SectionHead = ({ title, to }: { title: string; to?: string }) => (
   <div className="flex items-center justify-between mb-4 px-1">
@@ -32,6 +33,7 @@ const Index = () => (
 
     <main className="pt-[112px] pb-24">
       <div className="max-w-[1200px] mx-auto px-5 lg:px-8">
+        <ShowcaseNotice />
         <MarketHero />
 
         <section className="mt-5">

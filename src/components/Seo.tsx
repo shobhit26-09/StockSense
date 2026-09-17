@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
-const SITE = 'https://market-insight-gemini-bot.lovable.app';
+const SITE = 'https://stocksensee.netlify.app';
 
 interface SeoProps {
   title: string;
