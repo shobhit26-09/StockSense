@@ -1,0 +1,7 @@
+project_id = "sxxljwmqnvpalqtojdyv"
+
+[functions.dhan-market-data]
+verify_jwt = false
+
+[functions.smart-trade-agent]
+verify_jwt = false
