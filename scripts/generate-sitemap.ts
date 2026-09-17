@@ -4,6 +4,7 @@ import { writeFileSync } from "fs"
 import { resolve } from "path"
 
 const BASE_URL = "https://stocksensee.netlify.app"
+const LASTMOD = new Date().toISOString().slice(0, 10)
 
 interface SitemapEntry {
   path: string
@@ -26,6 +27,7 @@ function generateSitemap(list: SitemapEntry[]) {
     [
       `  <url>`,
       `    <loc>${BASE_URL}${e.path}</loc>`,
+      `    <lastmod>${LASTMOD}</lastmod>`,
       e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
       e.priority ? `    <priority>${e.priority}</priority>` : null,
       `  </url>`,

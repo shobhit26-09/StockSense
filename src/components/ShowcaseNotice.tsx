@@ -1,5 +1,6 @@
 import { FlaskConical, Info } from 'lucide-react';
 import { SHOWCASE_DISCLOSURE } from '@/config/showcase';
+import { isSupabaseConfigured } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const ShowcaseNotice = () => (
@@ -10,7 +11,11 @@ const ShowcaseNotice = () => (
         {SHOWCASE_DISCLOSURE.label}
       </span>
       <span className="hidden h-3 w-px bg-border sm:block" />
-      <span>{SHOWCASE_DISCLOSURE.summary}</span>
+      <span>
+        {isSupabaseConfigured
+          ? SHOWCASE_DISCLOSURE.summary
+          : 'Demo mode: simulated data (live feeds not configured)'}
+      </span>
     </div>
     <Tooltip>
       <TooltipTrigger asChild>

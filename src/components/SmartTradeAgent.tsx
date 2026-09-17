@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -43,6 +43,12 @@ const SmartTradeAgent = () => {
   const timerRef = useRef<number | null>(null);
 
   const run = async () => {
+    // AI agent stays disabled when no backend is configured; the showcase
+    // shows a labeled note instead of firing error toasts on every refresh.
+    if (!isSupabaseConfigured) {
+      setData(null);
+      return;
+    }
     setLoading(true);
     try {
       const { data: res, error } = await supabase.functions.invoke('smart-trade-agent', { body: {} });
@@ -118,7 +124,9 @@ const SmartTradeAgent = () => {
 
       {!data && (
         <div className="py-10 text-center text-xs text-muted-foreground">
-          {loading ? 'Analyzing live market…' : 'Tap refresh to scan.'}
+          {isSupabaseConfigured
+            ? (loading ? 'Analyzing live market…' : 'Tap refresh to scan.')
+            : 'Smart Trade Agent is disabled in this demo (AI features off).'}
         </div>
       )}
 
