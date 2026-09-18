@@ -1,90 +1,108 @@
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* iOS 26 Spatial — graphite glass */
-    --background: 240 14% 96%;
-    --foreground: 240 4% 12%;
+    --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+    /* Light — cool neutral, iOS-like system gray */
+    --background: 220 16% 96.5%;
+    --foreground: 240 6% 10%;
     --card: 0 0% 100%;
     --card-foreground: 240 6% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 6% 10%;
 
-    --primary: 211 100% 50%;
+    --primary: 240 5% 15%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 211 100% 58%;
-    --primary-dark: 211 100% 42%;
+    --primary-light: 240 4% 30%;
+    --primary-dark: 240 6% 8%;
 
-    --secondary: 240 10% 92%;
+    --secondary: 220 11% 92%;
     --secondary-foreground: 240 6% 10%;
-    --muted: 240 10% 93%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 220 11% 92%;
+    --muted-foreground: 230 6% 42%;
 
-    --accent: 211 100% 95%;
+    --accent: 220 12% 91%;
     --accent-foreground: 240 6% 10%;
 
-    --destructive: 349 78% 46%;       /* rose — price down */
+    --destructive: 349 75% 44%;
     --destructive-foreground: 0 0% 100%;
-    --success: 160 84% 30%;           /* emerald — price up */
+    --success: 158 80% 26%;
     --success-foreground: 0 0% 100%;
-    --warning: 33 90% 44%;
+    --warning: 33 90% 40%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 240 8% 87%;
-    --input: 240 8% 87%;
-    --ring: 211 100% 50%;
+    --border: 220 10% 86%;
+    --input: 220 10% 86%;
+    --ring: 240 5% 15%;
 
     --chart-1: 240 6% 10%;
-    --chart-2: 160 84% 30%;
-    --chart-3: 349 78% 46%;
-    --chart-4: 240 4% 46%;
-    --chart-5: 33 90% 44%;
+    --chart-2: 158 80% 26%;
+    --chart-3: 349 75% 44%;
+    --chart-4: 230 6% 42%;
+    --chart-5: 33 90% 40%;
 
-    --radius: 1.25rem;
+    --terminal: 240 7% 6%;
+    --terminal-foreground: 220 12% 93%;
 
-    --shadow-sm: 0 1px 2px hsl(240 10% 10% / 0.04), inset 0 1px 0 hsl(0 0% 100% / 0.72);
-    --shadow-md: 0 12px 32px -18px hsl(240 10% 10% / 0.20), inset 0 1px 0 hsl(0 0% 100% / 0.76);
-    --shadow-lg: 0 28px 70px -32px hsl(240 10% 10% / 0.28), inset 0 1px 0 hsl(0 0% 100% / 0.82);
+    --radius: 1rem;
+
+    --shadow-sm: 0 1px 2px hsl(232 30% 10% / 0.05), 0 1px 0 hsl(0 0% 100% / 0.6) inset;
+    --shadow-md: 0 10px 30px -16px hsl(232 30% 10% / 0.18), 0 1px 0 hsl(0 0% 100% / 0.65) inset;
+    --shadow-lg: 0 30px 70px -34px hsl(232 40% 10% / 0.28), 0 1px 0 hsl(0 0% 100% / 0.7) inset;
+    --glow-primary: 0 8px 22px -10px hsl(240 10% 8% / 0.28);
   }
 
   .dark {
-    /* iOS 26 Spatial — deep graphite */
-    --background: 240 6% 5%;
-    --foreground: 240 5% 96%;
-    --card: 240 6% 7%;
-    --card-foreground: 240 5% 96%;
-    --popover: 240 6% 8%;
-    --popover-foreground: 240 5% 96%;
+    /* Dark — true neutral black, iOS-like */
+    --background: 240 5% 4.5%;
+    --foreground: 220 12% 93%;
+    --card: 240 4% 8.5%;
+    --card-foreground: 220 12% 93%;
+    --popover: 240 4% 10%;
+    --popover-foreground: 220 12% 93%;
 
-    --primary: 211 100% 56%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 211 100% 64%;
-    --primary-dark: 211 100% 46%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 240 8% 8%;
+    --primary-light: 0 0% 100%;
+    --primary-dark: 0 0% 86%;
 
-    --secondary: 240 6% 10%;
-    --secondary-foreground: 240 5% 96%;
-    --muted: 240 6% 11%;
-    --muted-foreground: 240 5% 55%;
+    --secondary: 240 4% 13%;
+    --secondary-foreground: 220 12% 93%;
+    --muted: 240 4% 13%;
+    --muted-foreground: 240 5% 58%;
 
-    --accent: 211 35% 16%;
-    --accent-foreground: 240 5% 96%;
+    --accent: 240 4% 15%;
+    --accent-foreground: 220 12% 93%;
 
-    --destructive: 350 89% 60%;       /* rose-500 */
-    --destructive-foreground: 0 0% 100%;
-    --success: 160 84% 39%;           /* emerald-500 */
-    --success-foreground: 240 10% 4%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 240 10% 4%;
+    --destructive: 350 90% 64%;
+    --destructive-foreground: 350 60% 8%;
+    --success: 158 85% 44%;
+    --success-foreground: 160 60% 6%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 38 60% 6%;
 
-    --border: 240 6% 15%;
-    --input: 240 6% 15%;
-    --ring: 211 100% 56%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 0 0% 96%;
 
-    --shadow-sm: 0 1px 2px hsl(240 10% 1% / 0.45), inset 0 1px 0 hsl(0 0% 100% / 0.05);
-    --shadow-md: 0 16px 40px -20px hsl(240 10% 1% / 0.72), inset 0 1px 0 hsl(0 0% 100% / 0.06);
-    --shadow-lg: 0 32px 80px -28px hsl(240 10% 1% / 0.88), inset 0 1px 0 hsl(0 0% 100% / 0.07);
+    --terminal: 240 7% 5%;
+    --terminal-foreground: 220 12% 93%;
+
+    --shadow-sm: 0 1px 2px hsl(230 40% 2% / 0.5), 0 1px 0 hsl(0 0% 100% / 0.04) inset;
+    --shadow-md: 0 16px 42px -20px hsl(230 40% 2% / 0.7), 0 1px 0 hsl(0 0% 100% / 0.05) inset;
+    --shadow-lg: 0 36px 90px -34px hsl(230 50% 2% / 0.85), 0 1px 0 hsl(0 0% 100% / 0.06) inset;
+    --glow-primary: 0 8px 24px -12px hsl(0 0% 0% / 0.7);
   }
 }
 
@@ -96,15 +114,15 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Epilogue', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Urbanist', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
     font-weight: 600;
-    letter-spacing: 0;
+    letter-spacing: -0.015em;
     color: hsl(var(--foreground));
   }
 
@@ -115,61 +133,84 @@
   }
 
   .font-display {
-    font-family: 'Urbanist', ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: 0;
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.015em;
+  }
+
+  ::selection { background: hsl(var(--primary) / 0.25); }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.7);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
-/* Scrollbar — thin, unobtrusive */
+/* Scrollbar — thin, rounded, unobtrusive */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.25);
-  border-radius: 0;
+  background: hsl(var(--muted-foreground) / 0.28);
+  border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.45); }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); }
 
 /* Search dropdown z-index */
 .stock-search-dropdown { z-index: 999999 !important; }
 
-/* Ticker animation */
+/* Ticker */
 @keyframes scroll-left {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 .ticker-scroll { animation: scroll-left 60s linear infinite; }
+.ticker-viewport:hover .ticker-scroll { animation-play-state: paused; }
+.ticker-mask {
+  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+}
 
-/* Panels — hairline rules, no shadow, no radius flourish */
+/* Panels */
 .premium-card,
 .premium-card-elevated,
 .terminal-card {
-  background: hsl(var(--card) / 0.74);
-  backdrop-filter: blur(24px) saturate(145%);
-  -webkit-backdrop-filter: blur(24px) saturate(145%);
-  border: 1px solid hsl(var(--card-foreground) / 0.09);
+  background: hsl(var(--card) / 0.94);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid hsl(var(--card-foreground) / 0.08);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
 }
 
 .glass-panel {
-  background: hsl(var(--card) / 0.66);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
-  border: 1px solid hsl(var(--card-foreground) / 0.09);
+  background: hsl(var(--card) / 0.7);
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  border: 1px solid hsl(var(--card-foreground) / 0.08);
   box-shadow: var(--shadow-lg);
 }
 
 .glass-control {
   background: hsl(var(--card) / 0.72);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  border: 1px solid hsl(var(--card-foreground) / 0.10);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid hsl(var(--card-foreground) / 0.09);
   box-shadow: var(--shadow-sm);
 }
 
-/* Hairline grid: children on a 1px rule background */
+/* Terminal card — always dark, brand object */
+.terminal-shell {
+  background:
+    radial-gradient(120% 90% at 85% -10%, hsl(0 0% 100% / 0.07), transparent 55%),
+    hsl(var(--terminal));
+  color: hsl(var(--terminal-foreground));
+  border: 1px solid hsl(0 0% 100% / 0.09);
+  box-shadow: 0 24px 60px -28px hsl(230 50% 3% / 0.7);
+}
+
+/* Hairline grid */
 .rule-grid { gap: 0.875rem; }
-.rule-grid > * { background: hsl(var(--card) / 0.7); }
+.rule-grid > * { background: hsl(var(--card) / 0.72); }
 
 /* Data cell */
 .data-cell {
@@ -195,11 +236,68 @@
 /* Section eyebrow */
 .section-eyebrow {
   font-size: 11px;
-  letter-spacing: 0;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: hsl(var(--muted-foreground));
-  font-weight: 700;
+  font-weight: 600;
 }
+
+/* Hero ambient backdrop */
+.hero-ambient-v2 {
+  background:
+    radial-gradient(70% 60% at 50% -10%, hsl(var(--foreground) / 0.045), transparent 65%);
+}
+.hero-grid {
+  background-image:
+    linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(75% 75% at 50% 0%, black, transparent);
+  -webkit-mask-image: radial-gradient(75% 75% at 50% 0%, black, transparent);
+}
+
+/* Accent text — solid ink, no gradient fills */
+.text-accent-gradient { color: hsl(var(--foreground)); }
+
+/* Shimmer skeleton */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--muted) / 0.7);
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.07), transparent);
+  animation: shimmer-sweep 1.6s infinite;
+}
+@keyframes shimmer-sweep {
+  100% { transform: translateX(100%); }
+}
+
+/* Nav link underline */
+.nav-link {
+  position: relative;
+  transition: color 180ms var(--ease-spring);
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms var(--ease-spring);
+}
+.nav-link:hover::after { transform: scaleX(1); }
+.nav-link[data-active='true'] { color: hsl(var(--foreground)); }
+.nav-link[data-active='true']::after { transform: scaleX(1); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }

@@ -5,15 +5,18 @@ import FeatureGrid from '@/components/FeatureGrid';
 import PremiumTopMovers from '@/components/PremiumTopMovers';
 import PremiumNewsFeed from '@/components/PremiumNewsFeed';
 import { Link } from 'react-router-dom';
+import { ArrowRight, TrendingUp } from 'lucide-react';
 import Seo from '@/components/Seo';
 import ShowcaseNotice from '@/components/ShowcaseNotice';
 
 const SectionHead = ({ title, to }: { title: string; to?: string }) => (
-  <div className="flex items-center justify-between mb-4 px-1">
-    <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
+  <div className="mb-5 flex items-center gap-4 px-1">
+    <h2 className="font-display shrink-0 text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+    <span className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
     {to && (
-      <Link to={to} className="text-xs font-semibold text-primary hover:text-primary/75 transition-colors">
+      <Link to={to} className="group inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary-light">
         View all
+        <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
       </Link>
     )}
   </div>
@@ -51,11 +54,16 @@ const Index = () => (
           </div>
         </section>
 
-        <footer className="glass-panel rounded-[2rem] mt-16 p-7 md:p-9">
+        <footer className="mt-20 border-t border-border pt-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
             <div>
-              <div className="font-display text-sm font-bold uppercase tracking-tight">Stocksense</div>
-              <p className="mt-3 text-sm text-muted-foreground max-w-xs leading-relaxed">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <TrendingUp className="h-4 w-4" strokeWidth={2.5} />
+                </span>
+                <span className="font-display text-sm font-bold tracking-tight">StockSense</span>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground max-w-xs leading-relaxed">
                 A focused decision terminal for Indian markets—live context, transparent signals,
                 and fewer distractions.
               </p>
@@ -79,7 +87,7 @@ const Index = () => (
               </ul>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pt-6 border-t border-border text-[11px] text-muted-foreground">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-t border-border py-6 text-[11px] text-muted-foreground">
             <span>© {new Date().getFullYear()} Stocksense — educational use, not financial advice.</span>
             <span className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success live-indicator" />

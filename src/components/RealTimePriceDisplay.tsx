@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Radio, Pause, Play, Clock } from 'lucide-react';
 import { useRealTimeStock } from '@/hooks/useRealTimeStock';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface RealTimePriceDisplayProps {
   symbol: string;
@@ -16,7 +15,6 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
   companyName 
 }) => {
   const [isEnabled, setIsEnabled] = React.useState(true);
-  const [logoError, setLogoError] = React.useState(false);
   
   const { data, isLoading, error, startPolling, stopPolling, isMarketOpen } = useRealTimeStock({
     symbol,
@@ -34,30 +32,6 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
   };
 
   const baseSymbol = symbol.replace('.NS', '').replace('.BO', '');
-  
-  // Multiple logo sources to try
-  const logoSources = [
-    `https://financialmodelingprep.com/image-stock/${baseSymbol}.png`,
-    `https://logo.clearbit.com/${baseSymbol.toLowerCase()}.com`,
-    `https://assets.upstox.com/content/dam/upstox/company_logos/${baseSymbol}.png`
-  ];
-
-  const getInitials = (name?: string): string => {
-    if (!name || name.trim() === '') {
-      return baseSymbol.substring(0, 2).toUpperCase();
-    }
-    const initials = name
-      .split(' ')
-      .map((word) => word[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('');
-    return initials.toUpperCase() || baseSymbol.substring(0, 2).toUpperCase();
-  };
-
-  const handleLogoError = () => {
-    setLogoError(true);
-  };
 
   if (!data && !isLoading) {
     return null;
@@ -67,19 +41,6 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
     <div className="rounded-md border border-border/50 bg-card/40 p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4 min-w-0">
-          <Avatar className="h-12 w-12 border border-border/40">
-            {!logoError && (
-              <AvatarImage 
-                src={logoSources[0]} 
-                alt={`${companyName || baseSymbol} logo`} 
-                className="object-contain bg-white p-1"
-                onError={handleLogoError}
-              />
-            )}
-            <AvatarFallback className="text-xs font-bold bg-primary/15 text-primary">
-              {getInitials(companyName)}
-            </AvatarFallback>
-          </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               {data && (

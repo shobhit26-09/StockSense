@@ -24,17 +24,17 @@ const PageShell = ({ eyebrow, title, sub, seoTitle, seoDescription, children }: 
       <PremiumNavbar />
       <PremiumStockTicker />
     </div>
-    <main className="pt-[126px] pb-24">
+    <main className="pt-[124px] pb-24">
       <div className="max-w-[1200px] mx-auto px-5 lg:px-8">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6">
+        <Link to="/" className="mb-8 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to markets
         </Link>
-        <div className="glass-panel mb-8 flex flex-col gap-2 max-w-4xl rounded-3xl p-6 md:p-8">
-          <span className="section-eyebrow">{eyebrow}</span>
-          <h1 className="font-display text-3xl md:text-[42px] leading-tight font-semibold text-foreground">{title}</h1>
-          {sub && <p className="text-[15px] text-muted-foreground leading-relaxed">{sub}</p>}
-        </div>
+        <header className="mb-10 border-b border-border pb-8">
+          <div className="section-eyebrow mb-3">{eyebrow}</div>
+          <h1 className="font-display max-w-3xl text-4xl font-bold tracking-[-0.02em] text-foreground md:text-5xl">{title}</h1>
+          {sub && <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{sub}</p>}
+        </header>
         {children}
       </div>
     </main>
