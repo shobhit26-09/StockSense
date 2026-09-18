@@ -13,7 +13,7 @@
 
 @layer base {
   :root {
-    /* Light â warm paper */
+    /* Light — warm paper */
     --background: 42 18% 97%;
     --foreground: 232 20% 11%;
     --card: 0 0% 100%;
@@ -63,7 +63,7 @@
   }
 
   .dark {
-    /* Dark â deep terminal */
+    /* Dark — deep terminal */
     --background: 228 26% 5.5%;
     --foreground: 220 20% 94%;
     --card: 228 20% 8%;
@@ -145,7 +145,7 @@
   }
 }
 
-/* Scrollbar â thin, rounded, unobtrusive */
+/* Scrollbar — thin, rounded, unobtrusive */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -197,7 +197,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Terminal card â always dark, brand object */
+/* Terminal card — always dark, brand object */
 .terminal-shell {
   background:
     radial-gradient(120% 90% at 85% -10%, hsl(var(--primary) / 0.22), transparent 55%),
@@ -331,7 +331,7 @@
 
 .section-divider { height: 1px; background: hsl(var(--border)); }
 
-/* Compat â neutralise legacy decorative classes */
+/* Compat — neutralise legacy decorative classes */
 .glow-primary, .glow-accent, .animated-border { box-shadow: none; animation: none; }
 .hero-ambient { display: none; }
 .text-gradient-premium { color: hsl(var(--foreground)); background: none; }
