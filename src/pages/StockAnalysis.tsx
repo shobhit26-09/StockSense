@@ -14,6 +14,7 @@ import WatchlistButton from '@/components/WatchlistButton';
 import { fetchStockData } from '@/utils/stockApi';
 import { useToast } from '@/hooks/use-toast';
 import { TrendingUp, BarChart3, Brain, Activity, Zap, ArrowLeft } from 'lucide-react';
+import CompanyLogo from '@/components/CompanyLogo';
 import PremiumLoader from '@/components/PremiumLoader';
 import Seo from '@/components/Seo';
 
@@ -106,13 +107,16 @@ const StockAnalysis = () => {
             </Button>
 
             <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="min-w-0">
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-                  {stockData.info?.longName || symbol?.replace('.NS', '')}
-                </h1>
-                <p className="text-xs text-muted-foreground font-mono mt-1">
-                  {symbol?.replace('.NS', '')} · NSE
-                </p>
+              <div className="flex min-w-0 items-center gap-3.5">
+                <CompanyLogo symbol={plainSymbol} name={stockData.info?.longName} size="lg" />
+                <div className="min-w-0">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+                    {stockData.info?.longName || symbol?.replace('.NS', '')}
+                  </h1>
+                  <p className="text-xs text-muted-foreground font-mono mt-1">
+                    {symbol?.replace('.NS', '')} · NSE
+                  </p>
+                </div>
               </div>
               <WatchlistButton currentStock={{ ...stockData, symbol }} />
             </div>
