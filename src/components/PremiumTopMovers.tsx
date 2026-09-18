@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Zap, RefreshCw } from 'lucide-react';
+import CompanyLogo from '@/components/CompanyLogo';
 import { fetchTopMovers, type TopMover, type TopMoversData } from '@/services/topMoversService';
 import { useNavigate } from 'react-router-dom';
 
@@ -129,7 +130,10 @@ const PremiumTopMovers = () => {
           {isLoading && display.length === 0 ? (
             [...Array(5)].map((_, i) => (
               <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-x-4 py-3 items-center">
-                <div className="h-4 w-32 bg-muted/20 rounded animate-pulse" />
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-muted/20 animate-pulse" />
+                  <div className="h-4 w-28 bg-muted/20 rounded animate-pulse" />
+                </div>
                 <div className="h-5 w-16 bg-muted/10 rounded animate-pulse hidden sm:block" />
                 <div className="h-4 w-24 bg-muted/20 rounded animate-pulse" />
               </div>
@@ -146,9 +150,12 @@ const PremiumTopMovers = () => {
                   className="w-full grid grid-cols-[1fr_auto_auto] gap-x-4 py-3 items-center hover:bg-muted/10 transition-colors text-left rounded-lg -mx-2 px-2"
                 >
                   {/* Name */}
-                  <div className="min-w-0">
-                    <div className="text-xs font-medium text-foreground truncate">{stock.name}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono">{stock.symbol}</div>
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" />
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium text-foreground truncate">{stock.name}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{stock.symbol}</div>
+                    </div>
                   </div>
                   {/* Sparkline */}
                   <div className="hidden sm:block">
