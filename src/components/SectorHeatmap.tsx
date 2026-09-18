@@ -67,13 +67,9 @@ const SectorHeatmap = () => {
           source: quote.source
         };
       }
-      // Fallback to cached or random estimate
+      // Keep a stale real quote when available; otherwise show a neutral tile.
       const cached = cachedData?.find(s => s.symbol === sector.symbol);
-      return cached || { 
-        name: sector.displayName, 
-        symbol: sector.symbol, 
-        change: (Math.random() - 0.5) * 2 
-      };
+      return cached || { name: sector.displayName, symbol: sector.symbol, change: 0 };
     });
     
     cachedData = processedResults;
