@@ -164,7 +164,7 @@ const AllIndicesPanel = () => {
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-destructive/80" />Down</span>
           </div>
         </div>
-        <div className="relative h-[260px] md:h-[380px] rounded-2xl border border-border/60 bg-muted/15 overflow-hidden px-2 py-1">
+        <div className="relative h-[340px] md:h-[440px] rounded-[1.5rem] border border-white/10 overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,.28)]">
           <WorldMarketMap countries={countryMarkets} />
         </div>
       </div>
