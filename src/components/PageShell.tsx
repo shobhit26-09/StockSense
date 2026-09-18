@@ -31,7 +31,7 @@ const PageShell = ({ eyebrow, title, sub, seoTitle, seoDescription, children }: 
           Back to markets
         </Link>
         <header className="mb-10 border-b border-border pb-8">
-          <div className="section-eyebrow mb-3 text-primary">{eyebrow}</div>
+          <div className="section-eyebrow mb-3">{eyebrow}</div>
           <h1 className="font-display max-w-3xl text-4xl font-bold tracking-[-0.02em] text-foreground md:text-5xl">{title}</h1>
           {sub && <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{sub}</p>}
         </header>
