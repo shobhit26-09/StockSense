@@ -78,14 +78,14 @@ const BACKUP: Record<string, { price: number; name: string }> = {
 function getBackup(symbol: string) {
   const b = BACKUP[symbol];
   if (!b) return null;
-  const cp = (Math.random() - 0.5) * 3;
-  const price = b.price * (1 + (Math.random() - 0.5) * 0.02);
+  const cp = 0;
+  const price = b.price;
   return {
     symbol, name: b.name, price,
     change: b.price * cp / 100,
     changePercent: Math.round(cp * 100) / 100,
     previousClose: b.price,
-    volume: Math.floor(Math.random() * 10000000) + 1000000,
+    volume: 0,
     high: price * 1.01, low: price * 0.99, open: b.price,
     source: 'backup',
   };
