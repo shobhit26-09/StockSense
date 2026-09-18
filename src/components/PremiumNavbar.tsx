@@ -16,7 +16,7 @@ const NAV_LINKS = [
 
 const Wordmark = ({ onClick }: { onClick: () => void }) => (
   <button onClick={onClick} className="flex items-center gap-2.5 shrink-0">
-    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm" style={{ boxShadow: 'var(--glow-primary)' }}>
+    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
       <TrendingUp className="h-4 w-4" strokeWidth={2.5} />
     </span>
     <span className="font-display text-[17px] font-bold tracking-tight text-foreground">
@@ -147,7 +147,6 @@ const PremiumNavbar = () => {
             <button
               onClick={() => navigate('/agent')}
               className="hidden md:inline-flex items-center h-9 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-all hover:bg-primary-light"
-              style={{ boxShadow: 'var(--glow-primary)' }}
             >
               Trade agent
             </button>
@@ -187,7 +186,7 @@ const PremiumNavbar = () => {
                   <button
                     onClick={() => { setMenuOpen(false); navigate('/agent'); }}
                     className="mt-3 inline-flex h-11 items-center justify-center rounded-xl bg-primary font-display text-[15px] font-semibold text-primary-foreground"
-                    style={{ boxShadow: 'var(--glow-primary)' }}
+                   
                   >
                     Open trade agent
                   </button>
