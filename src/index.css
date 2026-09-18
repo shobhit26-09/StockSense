@@ -13,26 +13,27 @@
 
 @layer base {
   :root {
-    /* Light — warm paper */
-    --background: 42 18% 97%;
-    --foreground: 232 20% 11%;
+    --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+    /* Light — cool neutral, iOS-like system gray */
+    --background: 220 16% 96.5%;
+    --foreground: 240 6% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 232 20% 11%;
+    --card-foreground: 240 6% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 232 20% 11%;
+    --popover-foreground: 240 6% 10%;
 
-    --primary: 243 76% 52%;
+    --primary: 240 5% 15%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 243 85% 62%;
-    --primary-dark: 243 76% 44%;
+    --primary-light: 240 4% 30%;
+    --primary-dark: 240 6% 8%;
 
-    --secondary: 40 12% 93%;
-    --secondary-foreground: 232 20% 11%;
-    --muted: 40 12% 93%;
-    --muted-foreground: 232 9% 42%;
+    --secondary: 220 11% 92%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 220 11% 92%;
+    --muted-foreground: 230 6% 42%;
 
-    --accent: 243 60% 94%;
-    --accent-foreground: 232 20% 11%;
+    --accent: 220 12% 91%;
+    --accent-foreground: 240 6% 10%;
 
     --destructive: 349 75% 44%;
     --destructive-foreground: 0 0% 100%;
@@ -41,48 +42,48 @@
     --warning: 33 90% 40%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 40 11% 87%;
-    --input: 40 11% 87%;
-    --ring: 243 76% 52%;
+    --border: 220 10% 86%;
+    --input: 220 10% 86%;
+    --ring: 240 5% 15%;
 
-    --chart-1: 232 20% 11%;
+    --chart-1: 240 6% 10%;
     --chart-2: 158 80% 26%;
     --chart-3: 349 75% 44%;
-    --chart-4: 232 9% 42%;
+    --chart-4: 230 6% 42%;
     --chart-5: 33 90% 40%;
 
-    --terminal: 228 30% 7%;
-    --terminal-foreground: 220 20% 94%;
+    --terminal: 240 7% 6%;
+    --terminal-foreground: 220 12% 93%;
 
     --radius: 1rem;
 
     --shadow-sm: 0 1px 2px hsl(232 30% 10% / 0.05), 0 1px 0 hsl(0 0% 100% / 0.6) inset;
     --shadow-md: 0 10px 30px -16px hsl(232 30% 10% / 0.18), 0 1px 0 hsl(0 0% 100% / 0.65) inset;
     --shadow-lg: 0 30px 70px -34px hsl(232 40% 10% / 0.28), 0 1px 0 hsl(0 0% 100% / 0.7) inset;
-    --glow-primary: 0 10px 34px -12px hsl(var(--primary) / 0.55);
+    --glow-primary: 0 8px 22px -10px hsl(240 10% 8% / 0.28);
   }
 
   .dark {
-    /* Dark — deep terminal */
-    --background: 228 26% 5.5%;
-    --foreground: 220 20% 94%;
-    --card: 228 20% 8%;
-    --card-foreground: 220 20% 94%;
-    --popover: 228 20% 9%;
-    --popover-foreground: 220 20% 94%;
+    /* Dark — true neutral black, iOS-like */
+    --background: 240 5% 4.5%;
+    --foreground: 220 12% 93%;
+    --card: 240 4% 8.5%;
+    --card-foreground: 220 12% 93%;
+    --popover: 240 4% 10%;
+    --popover-foreground: 220 12% 93%;
 
-    --primary: 244 95% 72%;
-    --primary-foreground: 248 60% 8%;
-    --primary-light: 244 95% 78%;
-    --primary-dark: 244 80% 60%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 240 8% 8%;
+    --primary-light: 0 0% 100%;
+    --primary-dark: 0 0% 86%;
 
-    --secondary: 228 15% 12%;
-    --secondary-foreground: 220 20% 94%;
-    --muted: 228 15% 12%;
-    --muted-foreground: 226 12% 58%;
+    --secondary: 240 4% 13%;
+    --secondary-foreground: 220 12% 93%;
+    --muted: 240 4% 13%;
+    --muted-foreground: 240 5% 58%;
 
-    --accent: 244 45% 17%;
-    --accent-foreground: 220 20% 94%;
+    --accent: 240 4% 15%;
+    --accent-foreground: 220 12% 93%;
 
     --destructive: 350 90% 64%;
     --destructive-foreground: 350 60% 8%;
@@ -91,17 +92,17 @@
     --warning: 38 92% 55%;
     --warning-foreground: 38 60% 6%;
 
-    --border: 228 13% 15%;
-    --input: 228 13% 15%;
-    --ring: 244 95% 72%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 0 0% 96%;
 
-    --terminal: 232 32% 4%;
-    --terminal-foreground: 220 20% 94%;
+    --terminal: 240 7% 5%;
+    --terminal-foreground: 220 12% 93%;
 
     --shadow-sm: 0 1px 2px hsl(230 40% 2% / 0.5), 0 1px 0 hsl(0 0% 100% / 0.04) inset;
     --shadow-md: 0 16px 42px -20px hsl(230 40% 2% / 0.7), 0 1px 0 hsl(0 0% 100% / 0.05) inset;
     --shadow-lg: 0 36px 90px -34px hsl(230 50% 2% / 0.85), 0 1px 0 hsl(0 0% 100% / 0.06) inset;
-    --glow-primary: 0 12px 40px -12px hsl(var(--primary) / 0.5);
+    --glow-primary: 0 8px 24px -12px hsl(0 0% 0% / 0.7);
   }
 }
 
@@ -173,9 +174,9 @@
 .premium-card,
 .premium-card-elevated,
 .terminal-card {
-  background: hsl(var(--card) / 0.78);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  background: hsl(var(--card) / 0.94);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
   border: 1px solid hsl(var(--card-foreground) / 0.08);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
@@ -200,7 +201,7 @@
 /* Terminal card — always dark, brand object */
 .terminal-shell {
   background:
-    radial-gradient(120% 90% at 85% -10%, hsl(var(--primary) / 0.22), transparent 55%),
+    radial-gradient(120% 90% at 85% -10%, hsl(0 0% 100% / 0.07), transparent 55%),
     hsl(var(--terminal));
   color: hsl(var(--terminal-foreground));
   border: 1px solid hsl(0 0% 100% / 0.09);
@@ -244,8 +245,7 @@
 /* Hero ambient backdrop */
 .hero-ambient-v2 {
   background:
-    radial-gradient(60% 90% at 8% 0%, hsl(var(--primary) / 0.14), transparent 60%),
-    radial-gradient(45% 70% at 95% 100%, hsl(var(--success) / 0.08), transparent 60%);
+    radial-gradient(70% 60% at 50% -10%, hsl(var(--foreground) / 0.045), transparent 65%);
 }
 .hero-grid {
   background-image:
@@ -256,13 +256,8 @@
   -webkit-mask-image: radial-gradient(75% 75% at 50% 0%, black, transparent);
 }
 
-/* Gradient accent text */
-.text-accent-gradient {
-  background: linear-gradient(100deg, hsl(var(--primary)) 10%, hsl(var(--primary-light)) 90%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* Accent text — solid ink, no gradient fills */
+.text-accent-gradient { color: hsl(var(--foreground)); }
 
 /* Shimmer skeleton */
 .shimmer {
@@ -285,7 +280,7 @@
 /* Nav link underline */
 .nav-link {
   position: relative;
-  transition: color 160ms ease;
+  transition: color 180ms var(--ease-spring);
 }
 .nav-link::after {
   content: '';
@@ -298,7 +293,7 @@
   background: hsl(var(--primary));
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 180ms ease;
+  transition: transform 220ms var(--ease-spring);
 }
 .nav-link:hover::after { transform: scaleX(1); }
 .nav-link[data-active='true'] { color: hsl(var(--foreground)); }
