@@ -65,7 +65,7 @@ const MarketHero = () => {
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
-            <Button asChild variant="premium" size="default" className="rounded-full" style={{ boxShadow: 'var(--glow-primary)' }}>
+            <Button asChild variant="premium" size="default" className="rounded-full">
               <Link to="/agent">Open trade agent <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
             <Button asChild variant="outline" size="default" className="rounded-full">
