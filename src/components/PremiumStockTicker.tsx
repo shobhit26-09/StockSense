@@ -80,7 +80,7 @@ const PremiumStockTicker = () => {
   if (isLoading || tickerData.length === 0) {
     return (
       <div className="mt-2 h-8 border-y border-border/70 bg-background/80 backdrop-blur flex items-center px-4 gap-3 overflow-hidden">
-        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+        <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse shrink-0" />
         <div className="ticker-mask flex flex-1 items-center gap-6 overflow-hidden">
           {[96, 128, 80, 112, 96, 136].map((w, i) => (
             <span key={i} className="shimmer h-2.5 rounded-full shrink-0" style={{ width: w }} />
