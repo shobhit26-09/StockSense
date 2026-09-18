@@ -20,11 +20,15 @@ const SparklineChart = ({ data, isPositive }: { data: number[]; isPositive: bool
   );
 };
 
-const generateSparkline = (isPositive: boolean): number[] => {
-  let v = 50;
-  return Array.from({ length: 20 }, () => {
-    v += (Math.random() - 0.5 + (isPositive ? 0.3 : -0.3)) * 5;
-    return Math.max(20, Math.min(80, v));
+const generateSparkline = (isPositive: boolean, changePercent = 0): number[] => {
+  // Deterministic shape anchored to the live daily move; no invented randomness.
+  const magnitude = Math.min(28, Math.abs(changePercent) * 3);
+  const start = isPositive ? 50 - magnitude / 2 : 50 + magnitude / 2;
+  const end = isPositive ? 50 + magnitude / 2 : 50 - magnitude / 2;
+  return Array.from({ length: 18 }, (_, i) => {
+    const t = i / 17;
+    const curve = Math.sin(t * Math.PI * 2) * Math.min(3, magnitude / 6);
+    return Math.max(5, Math.min(95, start + (end - start) * t + curve));
   });
 };
 

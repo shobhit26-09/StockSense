@@ -17,6 +17,7 @@ import { TrendingUp, BarChart3, Brain, Activity, Zap, ArrowLeft } from 'lucide-r
 import CompanyLogo from '@/components/CompanyLogo';
 import PremiumLoader from '@/components/PremiumLoader';
 import Seo from '@/components/Seo';
+import ShowcaseNotice from '@/components/ShowcaseNotice';
 
 const StockAnalysis = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -94,6 +95,7 @@ const StockAnalysis = () => {
       </div>
 
       <main className="pt-24">
+        <div className="px-5 lg:px-8 pt-4"><div className="max-w-[1200px] mx-auto"><ShowcaseNotice /></div></div>
         {/* Header */}
         <section className="px-5 lg:px-8 pt-6 pb-4">
           <div className="glass-panel max-w-[1200px] mx-auto rounded-[2rem] p-6 md:p-8">

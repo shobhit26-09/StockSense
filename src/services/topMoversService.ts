@@ -97,8 +97,8 @@ const generateFallbackData = (): TopMoversData => {
   ];
   
   const gainers: TopMover[] = baseGainers.map(stock => {
-    const changePercent = 3 + Math.random() * 5;
-    const price = stock.basePrice * (1 + (Math.random() - 0.5) * 0.02);
+    const changePercent = 0;
+    const price = stock.basePrice;
     return {
       symbol: stock.symbol,
       name: stock.name,
@@ -109,8 +109,8 @@ const generateFallbackData = (): TopMoversData => {
   });
   
   const losers: TopMover[] = baseLosers.map(stock => {
-    const changePercent = -(2 + Math.random() * 4);
-    const price = stock.basePrice * (1 + (Math.random() - 0.5) * 0.02);
+    const changePercent = 0;
+    const price = stock.basePrice;
     return {
       symbol: stock.symbol,
       name: stock.name,

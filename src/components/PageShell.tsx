@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import PremiumNavbar from './PremiumNavbar';
 import PremiumStockTicker from './PremiumStockTicker';
 import Seo from './Seo';
+import ShowcaseNotice from './ShowcaseNotice';
 
 interface Props {
   eyebrow: string;
@@ -26,6 +27,7 @@ const PageShell = ({ eyebrow, title, sub, seoTitle, seoDescription, children }: 
     </div>
     <main className="pt-[124px] pb-24">
       <div className="max-w-[1200px] mx-auto px-5 lg:px-8">
+        <ShowcaseNotice />
         <Link to="/" className="mb-8 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to markets

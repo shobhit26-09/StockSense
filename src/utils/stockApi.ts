@@ -564,28 +564,12 @@ const getFallbackPrice = (symbol: string): number => {
 const generateFallbackHistoricalData = (currentPrice: number) => {
   const data = [];
   const today = new Date();
-  
   for (let i = 365; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    
-    // Skip weekends
     if (date.getDay() === 0 || date.getDay() === 6) continue;
-    
-    const volatility = 0.02;
-    const randomChange = (Math.random() - 0.5) * 2 * volatility;
-    const dayPrice = currentPrice * (1 + randomChange * (i / 365));
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      open: dayPrice * 0.998,
-      high: dayPrice * 1.01,
-      low: dayPrice * 0.99,
-      close: dayPrice,
-      volume: Math.floor(Math.random() * 5000000) + 500000
-    });
+    data.push({ date: date.toISOString().split('T')[0], open: currentPrice, high: currentPrice, low: currentPrice, close: currentPrice, volume: 0 });
   }
-  
   return data;
 };
 
@@ -648,92 +632,14 @@ export const fetchMarketIndices = async () => {
   }
 };
 
-const generateEnhancedFinancials = (symbol: string, currentPrice: number, chartMeta: any): FundamentalData => {
-  const baseName = symbol.replace('.NS', '').replace('.BO', '');
-  console.log('Generating enhanced financials for:', baseName, 'at price:', currentPrice);
-  
-  // Use actual market data where available from chart meta
-  const marketCap = chartMeta.marketCap || null;
-  const fiftyTwoWeekHigh = chartMeta.fiftyTwoWeekHigh || null;
-  const fiftyTwoWeekLow = chartMeta.fiftyTwoWeekLow || null;
-  
-  // Create more accurate estimates based on actual Indian market data patterns
-  const estimates: FundamentalData = {
-    marketCap,
-    fiftyTwoWeekHigh,
-    fiftyTwoWeekLow,
-    isEstimated: true
-  };
-  
-  // Enhanced sector-specific calculations based on real market averages
-  if (['PNB', 'SBIN', 'HDFCBANK', 'ICICIBANK', 'KOTAKBANK', 'AXISBANK'].includes(baseName)) {
-    // Banking sector - based on actual NSE bank averages
-    estimates.trailingPE = 8.5 + (Math.random() * 6); // 8.5-14.5 for banks
-    estimates.priceToBook = 0.8 + (Math.random() * 1.2); // 0.8-2.0 for banks
-    estimates.returnOnEquity = 14 + (Math.random() * 6); // 14-20%
-    estimates.currentRatio = 1.05 + (Math.random() * 0.15); // Banking specific
-    estimates.debtToEquity = 28 + (Math.random() * 15); // 28-43%
-    estimates.beta = 0.95 + (Math.random() * 0.3); // 0.95-1.25
-    estimates.dividendYield = 2.5 + (Math.random() * 2); // 2.5-4.5%
-    estimates.sector = 'Financial Services';
-    estimates.industry = 'Banks';
-    estimates.grossMargins = 85 + (Math.random() * 10); // 85-95% for banks
-    estimates.operatingMargins = 25 + (Math.random() * 15); // 25-40%
-    estimates.profitMargins = 20 + (Math.random() * 10); // 20-30%
-  } 
-  // IT companies - based on actual Nifty IT averages
-  else if (['TCS', 'INFY', 'WIPRO', 'TECHM', 'HCLTECH', 'LTI'].includes(baseName)) {
-    estimates.trailingPE = 24 + (Math.random() * 10); // 24-34 for IT
-    estimates.priceToBook = 5 + (Math.random() * 5); // 5-10 for IT
-    estimates.returnOnEquity = 22 + (Math.random() * 13); // 22-35%
-    estimates.currentRatio = 2.8 + (Math.random() * 1.2); // 2.8-4.0
-    estimates.debtToEquity = 3 + (Math.random() * 7); // 3-10% (low debt)
-    estimates.beta = 0.85 + (Math.random() * 0.35); // 0.85-1.2
-    estimates.dividendYield = 2 + (Math.random() * 1.5); // 2-3.5%
-    estimates.sector = 'Technology';
-    estimates.industry = 'Information Technology Services';
-    estimates.grossMargins = 40 + (Math.random() * 15); // 40-55%
-    estimates.operatingMargins = 18 + (Math.random() * 12); // 18-30%
-    estimates.profitMargins = 15 + (Math.random() * 10); // 15-25%
-  }
-  // Default for other companies
-  else {
-    estimates.trailingPE = 20 + (Math.random() * 13); // 20-33
-    estimates.priceToBook = 2.8 + (Math.random() * 2.7); // 2.8-5.5
-    estimates.returnOnEquity = 14 + (Math.random() * 8); // 14-22%
-    estimates.currentRatio = 1.9 + (Math.random() * 0.9); // 1.9-2.8
-    estimates.debtToEquity = 28 + (Math.random() * 22); // 28-50%
-    estimates.beta = 0.95 + (Math.random() * 0.55); // 0.95-1.5
-    estimates.dividendYield = 2 + (Math.random() * 2); // 2-4%
-    estimates.sector = getDefaultSector(symbol);
-    estimates.industry = getDefaultIndustry(symbol);
-    estimates.grossMargins = 25 + (Math.random() * 20); // 25-45%
-    estimates.operatingMargins = 12 + (Math.random() * 13); // 12-25%
-    estimates.profitMargins = 8 + (Math.random() * 12); // 8-20%
-  }
-  
-  // Calculate EPS from PE ratio
-  if (estimates.trailingPE) {
-    estimates.trailingEps = currentPrice / estimates.trailingPE;
-  }
-  
-  // Add other estimates
-  estimates.revenueGrowth = 5 + (Math.random() * 20); // 5-25%
-  estimates.earningsGrowth = -5 + (Math.random() * 30); // -5% to 25%
-  estimates.returnOnAssets = 3 + (Math.random() * 12); // 3-15%
-  estimates.quickRatio = estimates.currentRatio ? estimates.currentRatio * 0.8 : null;
-  
-  // If we don't have market cap, estimate it more accurately
-  if (!estimates.marketCap) {
-    const estimatedShares = currentPrice < 100 ? 400000000 : 
-                           currentPrice < 500 ? 200000000 : 
-                           currentPrice < 1000 ? 100000000 : 50000000;
-    estimates.marketCap = estimatedShares * currentPrice;
-  }
-  
-  console.log('Generated enhanced estimates:', estimates);
-  return estimates;
-};
+const generateEnhancedFinancials = (symbol: string, _currentPrice: number, chartMeta: any): FundamentalData => ({
+  marketCap: chartMeta.marketCap ?? null,
+  fiftyTwoWeekHigh: chartMeta.fiftyTwoWeekHigh ?? null,
+  fiftyTwoWeekLow: chartMeta.fiftyTwoWeekLow ?? null,
+  sector: getDefaultSector(symbol),
+  industry: getDefaultIndustry(symbol),
+  isEstimated: true,
+});
 
 const fetchChartData = async (symbol: string) => {
   const { data, error } = await supabase.functions.invoke('fetch-market-data', {
