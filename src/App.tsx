@@ -5,6 +5,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import RequireAuth from '@/components/RequireAuth';
 import PremiumLoader from '@/components/PremiumLoader';
 
 const Index = lazy(() => import('./pages/Index'));
@@ -16,6 +18,9 @@ const HeatmapPage = lazy(() => import('./pages/HeatmapPage'));
 const MoversPage = lazy(() => import('./pages/MoversPage'));
 const MacroPage = lazy(() => import('./pages/MacroPage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,7 +35,8 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -44,12 +50,16 @@ const App = () => (
               <Route path="/movers" element={<MoversPage />} />
               <Route path="/macro" element={<MacroPage />} />
               <Route path="/news" element={<NewsPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
+              <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/market" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
