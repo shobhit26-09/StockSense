@@ -26,7 +26,7 @@ const AuthPage = () => {
   const {
     user, loading, recoveryMode, clearRecoveryMode,
     signIn, signUp, sendPasswordReset, updatePassword,
-    signInWithGoogle, sendSignInCode, verifySignInCode,
+    signInWithGoogle, sendSignInCode,
   } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,7 +36,6 @@ const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [code, setCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,17 +46,13 @@ const AuthPage = () => {
     setMode(next);
     setPassword('');
     setConfirm('');
-    setCode('');
     setOtpSent(false);
     setError(null);
     setNotice(null);
   };
 
   const validate = (): string | null => {
-    if (mode === 'otp') {
-      if (!otpSent) return EMAIL_RE.test(email.trim()) ? null : 'Enter a valid email address.';
-      return /^\d{6}$/.test(code.trim()) ? null : 'Enter the 6-digit code from your email.';
-    }
+    if (mode === 'otp') return EMAIL_RE.test(email.trim()) ? null : 'Enter a valid email address.';
     if (recoveryMode) {
       if (password.length < MIN_PASSWORD) return `Password must be at least ${MIN_PASSWORD} characters.`;
       if (password !== confirm) return 'Passwords do not match.';
@@ -82,16 +77,11 @@ const AuthPage = () => {
     setNotice(null);
     try {
       if (mode === 'otp') {
-        if (!otpSent) {
-          const { error: err } = await sendSignInCode(email.trim());
-          if (err) setError(err);
-          else {
-            setOtpSent(true);
-            setNotice('Sign-in code sent. Check your email and enter the 6-digit code (or tap the link in the email).');
-          }
-        } else {
-          const { error: err } = await verifySignInCode(email.trim(), code.trim());
-          if (err) setError(err);
+        const { error: err } = await sendSignInCode(email.trim());
+        if (err) setError(err);
+        else {
+          setOtpSent(true);
+          setNotice('Sign-in link sent. Check your email and tap the link to sign in.');
         }
       } else if (recoveryMode) {
         const { error: err } = await updatePassword(password);
@@ -145,7 +135,7 @@ const AuthPage = () => {
       : mode === 'signup'
         ? 'Create your account'
         : mode === 'otp'
-          ? 'Sign in with a code'
+          ? 'Sign in with an email link'
           : 'Reset your password';
 
   return (
@@ -186,7 +176,7 @@ const AuthPage = () => {
                   : mode === 'forgot'
                     ? 'We will email you a password reset link.'
                     : mode === 'otp'
-                      ? 'Passwordless sign-in with a one-time email code.'
+                      ? 'Passwordless sign-in with a one-time email link.'
                       : 'Free account for the Indian market dashboard.'}
               </p>
 
@@ -257,25 +247,6 @@ const AuthPage = () => {
                   </div>
                 )}
 
-                {mode === 'otp' && otpSent && (
-                  <div className="space-y-2">
-                    <Label htmlFor="auth-code">6-digit code</Label>
-                    <Input
-                      id="auth-code"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      placeholder="123456"
-                      maxLength={6}
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                      disabled={pending}
-                      required
-                      className="text-center font-mono text-lg tracking-[0.4em]"
-                    />
-                  </div>
-                )}
-
                 {mode !== 'forgot' && mode !== 'otp' && (
                   <div className="space-y-2">
                     <Label htmlFor="auth-password">{recoveryMode ? 'New password' : 'Password'}</Label>
@@ -316,7 +287,7 @@ const AuthPage = () => {
                       : mode === 'signup'
                         ? 'Create account'
                         : mode === 'otp'
-                          ? otpSent ? 'Verify and sign in' : 'Send sign-in code'
+                          ? otpSent ? 'Resend sign-in link' : 'Email me a sign-in link'
                           : 'Send reset link'}
                 </Button>
               </form>
@@ -331,7 +302,7 @@ const AuthPage = () => {
                     </div>
                     <div>
                       <button type="button" onClick={() => switchMode('otp')} className="text-muted-foreground transition-colors hover:text-foreground">
-                        Sign in with a code instead
+                        Sign in with an email link instead
                       </button>
                     </div>
                   </>
