@@ -9,6 +9,8 @@ const AccountPage = () => {
   const navigate = useNavigate();
 
   const created = user?.created_at ? new Date(user.created_at) : null;
+  const provider = (user?.app_metadata?.provider as string | undefined) ?? 'email';
+  const providerLabel = provider === 'google' ? 'Signed in with Google' : 'Signed in with email and password';
   const initial = (user?.email ?? '?').charAt(0).toUpperCase();
 
   const handleSignOut = async () => {
@@ -36,7 +38,7 @@ const AccountPage = () => {
               <span className="truncate">{user?.email}</span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Signed in with email and password
+              {providerLabel}
               {created && ` · Joined ${created.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`}
             </p>
           </div>
