@@ -27,7 +27,6 @@ interface AuthContextValue {
   signInWithGoogle: () => Promise<AuthResult>;
   /** Emails a one-time sign-in code (with a magic link as fallback in the same email). */
   sendSignInCode: (email: string) => Promise<AuthResult>;
-  verifySignInCode: (email: string, token: string) => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -117,12 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error?.message ?? null };
   }, []);
 
-  const verifySignInCode = useCallback(async (email: string, token: string): Promise<AuthResult> => {
-    if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
-    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
-    return { error: error?.message ?? null };
-  }, []);
-
   const clearRecoveryMode = useCallback(() => setRecoveryMode(false), []);
 
   const value = useMemo<AuthContextValue>(
@@ -140,9 +133,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updatePassword,
       signInWithGoogle,
       sendSignInCode,
-      verifySignInCode,
     }),
-    [session, loading, recoveryMode, clearRecoveryMode, signIn, signUp, signOut, sendPasswordReset, updatePassword, signInWithGoogle, sendSignInCode, verifySignInCode],
+    [session, loading, recoveryMode, clearRecoveryMode, signIn, signUp, signOut, sendPasswordReset, updatePassword, signInWithGoogle, sendSignInCode],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
