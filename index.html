@@ -112,10 +112,55 @@
         "description": "Indian stock market analysis and stock screening platform."
       }
     </script>
+
+    <!-- Organization structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "StockSense",
+        "url": "https://stocksensee.netlify.app/",
+        "logo": "https://stocksensee.netlify.app/og-stocksense.jpg"
+      }
+    </script>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static pre-app splash: replaced by the React app on load. Gives
+           non-JavaScript crawlers real content and internal links. -->
+      <div style="min-height:100vh;background:#0b0b0d;color:#f4f4f5;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;letter-spacing:-0.02em">StockSense</div>
+        <p style="margin-top:0.75rem;max-width:34rem;color:#a1a1aa;font-size:0.95rem;line-height:1.6">
+          StockSense is a free Indian stock market dashboard: live NSE and BSE quotes,
+          top movers, sector outlooks, market breadth, macro events and news in one clear view.
+        </p>
+        <nav style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:0.5rem 1.25rem;justify-content:center;font-size:0.85rem">
+          <a style="color:#a1a1aa" href="/">Markets</a>
+          <a style="color:#a1a1aa" href="/movers">Top movers</a>
+          <a style="color:#a1a1aa" href="/sectors">Sectors</a>
+          <a style="color:#a1a1aa" href="/heatmap">Heatmap</a>
+          <a style="color:#a1a1aa" href="/macro">Macro</a>
+          <a style="color:#a1a1aa" href="/news">News</a>
+          <a style="color:#a1a1aa" href="/agent">Trade agent</a>
+        </nav>
+      </div>
+      <noscript>
+        <div style="padding:2rem;font-family:system-ui,sans-serif">
+          <h1>StockSense — Indian Stock Market Dashboard for NSE &amp; BSE</h1>
+          <p>StockSense is a free Indian stock market dashboard: live NSE and BSE quotes, top movers, sector outlooks, market breadth, macro events and news in one clear view. JavaScript is required for live market data.</p>
+          <ul>
+            <li><a href="/">Markets</a></li>
+            <li><a href="/movers">Top movers</a></li>
+            <li><a href="/sectors">Sectors</a></li>
+            <li><a href="/heatmap">Heatmap</a></li>
+            <li><a href="/macro">Macro</a></li>
+            <li><a href="/news">News</a></li>
+            <li><a href="/agent">Trade agent</a></li>
+          </ul>
+        </div>
+      </noscript>
+    </div>
 
     <script type="module" src="/src/main.tsx"></script>
   </body>
