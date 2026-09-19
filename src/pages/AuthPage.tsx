@@ -6,14 +6,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { ENABLED_OAUTH_PROVIDERS } from '@/config/authProviders';
 
-type Mode = 'signin' | 'signup' | 'forgot';
+type Mode = 'signin' | 'signup' | 'forgot' | 'otp';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 
+const GoogleMark = () => (
+  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.16 3.57-8.81z"/>
+    <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.91l-3.87-3c-1.07.72-2.44 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.29v3.1A12 12 0 0 0 12 24z"/>
+    <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28v-3.1H1.29a12 12 0 0 0 0 10.76l3.98-3.1z"/>
+    <path fill="#EA4335" d="M12 4.76c1.76 0 3.34.61 4.58 1.8l3.44-3.44A11.98 11.98 0 0 0 12 0 12 12 0 0 0 1.29 6.62l3.98 3.1c.95-2.85 3.6-4.96 6.73-4.96z"/>
+  </svg>
+);
+
 const AuthPage = () => {
-  const { user, loading, recoveryMode, clearRecoveryMode, signIn, signUp, sendPasswordReset, updatePassword } = useAuth();
+  const {
+    user, loading, recoveryMode, clearRecoveryMode,
+    signIn, signUp, sendPasswordReset, updatePassword,
+    signInWithGoogle, sendSignInCode, verifySignInCode,
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/';
@@ -22,6 +36,8 @@ const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [code, setCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -31,12 +47,18 @@ const AuthPage = () => {
     setMode(next);
     setPassword('');
     setConfirm('');
+    setCode('');
+    setOtpSent(false);
     setError(null);
     setNotice(null);
   };
 
   const validate = (): string | null => {
-    if (mode !== 'forgot' && recoveryMode) {
+    if (mode === 'otp') {
+      if (!otpSent) return EMAIL_RE.test(email.trim()) ? null : 'Enter a valid email address.';
+      return /^\d{6}$/.test(code.trim()) ? null : 'Enter the 6-digit code from your email.';
+    }
+    if (recoveryMode) {
       if (password.length < MIN_PASSWORD) return `Password must be at least ${MIN_PASSWORD} characters.`;
       if (password !== confirm) return 'Passwords do not match.';
       return null;
@@ -59,7 +81,19 @@ const AuthPage = () => {
     setError(null);
     setNotice(null);
     try {
-      if (recoveryMode) {
+      if (mode === 'otp') {
+        if (!otpSent) {
+          const { error: err } = await sendSignInCode(email.trim());
+          if (err) setError(err);
+          else {
+            setOtpSent(true);
+            setNotice('Sign-in code sent. Check your email and enter the 6-digit code (or tap the link in the email).');
+          }
+        } else {
+          const { error: err } = await verifySignInCode(email.trim(), code.trim());
+          if (err) setError(err);
+        }
+      } else if (recoveryMode) {
         const { error: err } = await updatePassword(password);
         if (err) setError(err);
         else {
@@ -89,6 +123,17 @@ const AuthPage = () => {
     }
   };
 
+  const handleGoogle = async () => {
+    setPending(true);
+    setError(null);
+    const { error: err } = await signInWithGoogle();
+    if (err) {
+      setError(err);
+      setPending(false);
+    }
+    // On success the browser is navigating to Google; keep the pending state.
+  };
+
   if (!loading && user && !recoveryMode && !resetDone) {
     return <Navigate to={from} replace />;
   }
@@ -99,7 +144,9 @@ const AuthPage = () => {
       ? 'Sign in to StockSense'
       : mode === 'signup'
         ? 'Create your account'
-        : 'Reset your password';
+        : mode === 'otp'
+          ? 'Sign in with a code'
+          : 'Reset your password';
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -138,10 +185,12 @@ const AuthPage = () => {
                   ? 'Enter a new password for your account.'
                   : mode === 'forgot'
                     ? 'We will email you a password reset link.'
-                    : 'Free account for the Indian market dashboard.'}
+                    : mode === 'otp'
+                      ? 'Passwordless sign-in with a one-time email code.'
+                      : 'Free account for the Indian market dashboard.'}
               </p>
 
-              {!recoveryMode && mode !== 'forgot' && (
+              {!recoveryMode && mode !== 'forgot' && mode !== 'otp' && (
                 <div className="mt-6 grid grid-cols-2 rounded-full border border-border bg-background/60 p-1 text-sm font-semibold">
                   <button
                     type="button"
@@ -171,8 +220,28 @@ const AuthPage = () => {
                 </div>
               )}
 
+              {!recoveryMode && mode !== 'otp' && ENABLED_OAUTH_PROVIDERS.google && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-6 w-full rounded-full"
+                    onClick={handleGoogle}
+                    disabled={pending}
+                  >
+                    {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleMark />}
+                    Continue with Google
+                  </Button>
+                  <div className="mt-5 flex items-center gap-3 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                    <span className="h-px flex-1 bg-border" />
+                    or with email
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                </>
+              )}
+
               <form onSubmit={submit} className="mt-6 space-y-4">
-                {!recoveryMode && (
+                {(!recoveryMode && !(mode === 'otp' && otpSent)) && (
                   <div className="space-y-2">
                     <Label htmlFor="auth-email">Email</Label>
                     <Input
@@ -188,7 +257,26 @@ const AuthPage = () => {
                   </div>
                 )}
 
-                {mode !== 'forgot' && (
+                {mode === 'otp' && otpSent && (
+                  <div className="space-y-2">
+                    <Label htmlFor="auth-code">6-digit code</Label>
+                    <Input
+                      id="auth-code"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="123456"
+                      maxLength={6}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                      disabled={pending}
+                      required
+                      className="text-center font-mono text-lg tracking-[0.4em]"
+                    />
+                  </div>
+                )}
+
+                {mode !== 'forgot' && mode !== 'otp' && (
                   <div className="space-y-2">
                     <Label htmlFor="auth-password">{recoveryMode ? 'New password' : 'Password'}</Label>
                     <Input
@@ -227,19 +315,32 @@ const AuthPage = () => {
                       ? 'Sign in'
                       : mode === 'signup'
                         ? 'Create account'
-                        : 'Send reset link'}
+                        : mode === 'otp'
+                          ? otpSent ? 'Verify and sign in' : 'Send sign-in code'
+                          : 'Send reset link'}
                 </Button>
               </form>
 
-              <div className="mt-5 text-center text-sm">
+              <div className="mt-5 space-y-2 text-center text-sm">
                 {recoveryMode ? null : mode === 'signin' ? (
-                  <button type="button" onClick={() => switchMode('forgot')} className="text-muted-foreground transition-colors hover:text-foreground">
-                    Forgot password?
-                  </button>
-                ) : mode === 'forgot' ? (
-                  <button type="button" onClick={() => switchMode('signin')} className="text-muted-foreground transition-colors hover:text-foreground">
-                    Back to sign in
-                  </button>
+                  <>
+                    <div>
+                      <button type="button" onClick={() => switchMode('forgot')} className="text-muted-foreground transition-colors hover:text-foreground">
+                        Forgot password?
+                      </button>
+                    </div>
+                    <div>
+                      <button type="button" onClick={() => switchMode('otp')} className="text-muted-foreground transition-colors hover:text-foreground">
+                        Sign in with a code instead
+                      </button>
+                    </div>
+                  </>
+                ) : mode === 'forgot' || mode === 'otp' ? (
+                  <div>
+                    <button type="button" onClick={() => switchMode('signin')} className="text-muted-foreground transition-colors hover:text-foreground">
+                      Back to sign in
+                    </button>
+                  </div>
                 ) : null}
               </div>
             </>
