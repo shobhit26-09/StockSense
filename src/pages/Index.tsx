@@ -7,6 +7,7 @@ import PremiumNewsFeed from '@/components/PremiumNewsFeed';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp } from 'lucide-react';
 import Seo from '@/components/Seo';
+import FaqSection from '@/components/FaqSection';
 import ShowcaseNotice from '@/components/ShowcaseNotice';
 
 const SectionHead = ({ title, to }: { title: string; to?: string }) => (
@@ -25,8 +26,8 @@ const SectionHead = ({ title, to }: { title: string; to?: string }) => (
 const Index = () => (
   <div className="min-h-screen bg-background text-foreground">
     <Seo
-      title="Stocksense — Live NSE & BSE market dashboard"
-      description="Live Indian market quotes, top movers, sector outlooks, breadth and news in one clear dashboard."
+      title="StockSense — Indian Stock Market Dashboard for NSE & BSE"
+      description="StockSense is a free Indian stock market dashboard: live NSE and BSE quotes, top movers, sector outlooks, market breadth, macro events and news in one clear view."
       path="/"
     />
     <div className="fixed top-0 left-0 right-0 z-50">
@@ -53,6 +54,8 @@ const Index = () => (
             <PremiumNewsFeed />
           </div>
         </section>
+
+        <FaqSection />
 
         <footer className="mt-20 border-t border-border pt-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
@@ -88,7 +91,10 @@ const Index = () => (
             </div>
           </div>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-t border-border py-6 text-[11px] text-muted-foreground">
-            <span>© {new Date().getFullYear()} Stocksense — educational use, not financial advice.</span>
+            <span className="flex items-center gap-4">
+              <span>© {new Date().getFullYear()} StockSense — educational use, not financial advice.</span>
+              <Link to="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
+            </span>
             <span className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success live-indicator" />
               Live · Yahoo Finance

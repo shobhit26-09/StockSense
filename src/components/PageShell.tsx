@@ -12,14 +12,16 @@ interface Props {
   sub?: string;
   seoTitle?: string;
   seoDescription?: string;
+  seoNoIndex?: boolean;
   children: ReactNode;
 }
 
-const PageShell = ({ eyebrow, title, sub, seoTitle, seoDescription, children }: Props) => (
+const PageShell = ({ eyebrow, title, sub, seoTitle, seoDescription, seoNoIndex, children }: Props) => (
   <div className="min-h-screen bg-background text-foreground">
     <Seo
-      title={seoTitle ?? `${title} — Stocksense`}
-      description={seoDescription ?? sub ?? `${title} for Indian markets on Stocksense.`}
+      title={seoTitle ?? `${title} — StockSense`}
+      description={seoDescription ?? sub ?? `${title} for Indian markets on StockSense.`}
+      noindex={seoNoIndex}
     />
     <div className="fixed top-0 left-0 right-0 z-50">
       <PremiumNavbar />
