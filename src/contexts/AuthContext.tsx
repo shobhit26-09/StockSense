@@ -23,6 +23,11 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<AuthResult>;
   updatePassword: (password: string) => Promise<AuthResult>;
+  /** Redirects the browser to Google and back; only resolves on failure to start. */
+  signInWithGoogle: () => Promise<AuthResult>;
+  /** Emails a one-time sign-in code (with a magic link as fallback in the same email). */
+  sendSignInCode: (email: string) => Promise<AuthResult>;
+  verifySignInCode: (email: string, token: string) => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -94,6 +99,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error?.message ?? null };
   }, []);
 
+  const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
+    if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth` },
+    });
+    return { error: error?.message ?? null };
+  }, []);
+
+  const sendSignInCode = useCallback(async (email: string): Promise<AuthResult> => {
+    if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth`, shouldCreateUser: true },
+    });
+    return { error: error?.message ?? null };
+  }, []);
+
+  const verifySignInCode = useCallback(async (email: string, token: string): Promise<AuthResult> => {
+    if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+    return { error: error?.message ?? null };
+  }, []);
+
   const clearRecoveryMode = useCallback(() => setRecoveryMode(false), []);
 
   const value = useMemo<AuthContextValue>(
@@ -109,8 +138,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signOut,
       sendPasswordReset,
       updatePassword,
+      signInWithGoogle,
+      sendSignInCode,
+      verifySignInCode,
     }),
-    [session, loading, recoveryMode, clearRecoveryMode, signIn, signUp, signOut, sendPasswordReset, updatePassword],
+    [session, loading, recoveryMode, clearRecoveryMode, signIn, signUp, signOut, sendPasswordReset, updatePassword, signInWithGoogle, sendSignInCode, verifySignInCode],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
