@@ -2,5 +2,5 @@
 // configured and verified in the Supabase project. Flip a flag on only
 // after the provider is live end to end — never show a dead button.
 export const ENABLED_OAUTH_PROVIDERS = {
-  google: false,
+  google: true,
 } as const;
