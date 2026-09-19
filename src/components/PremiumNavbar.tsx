@@ -1,9 +1,17 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Search, TrendingUp } from 'lucide-react';
+import { LogOut, Menu, Search, TrendingUp, UserRound } from 'lucide-react';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import ThemeToggle from './ThemeToggle';
 import { searchStocks } from '@/services/stockSearchService';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NAV_LINKS = [
   { to: '/', label: 'Dashboard' },
@@ -28,6 +36,7 @@ const Wordmark = ({ onClick }: { onClick: () => void }) => (
 const PremiumNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -71,6 +80,14 @@ const PremiumNavbar = () => {
 
   const isActive = (to: string) =>
     to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+
+  const handleSignOut = async () => {
+    setMenuOpen(false);
+    await signOut();
+    navigate('/');
+  };
+
+  const userInitial = (user?.email ?? '').charAt(0).toUpperCase();
 
   return (
     <nav className="w-full pt-3 px-3">
@@ -153,6 +170,38 @@ const PremiumNavbar = () => {
 
             <ThemeToggle />
 
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    aria-label="Account menu"
+                    className="glass-control flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-foreground"
+                  >
+                    {userInitial || <UserRound className="h-4 w-4" />}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <div className="truncate px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/account')}>
+                    <UserRound className="mr-2 h-4 w-4" />
+                    Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <button
+                onClick={() => navigate('/auth')}
+                className="hidden sm:inline-flex h-9 items-center rounded-full border border-border px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                Sign in
+              </button>
+            )}
+
             {/* Mobile menu */}
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
@@ -190,6 +239,31 @@ const PremiumNavbar = () => {
                   >
                     Open trade agent
                   </button>
+                  <div className="my-3 h-px bg-border" />
+                  {user ? (
+                    <>
+                      <div className="truncate px-3 pb-2 text-xs text-muted-foreground">{user.email}</div>
+                      <button
+                        onClick={() => { setMenuOpen(false); navigate('/account'); }}
+                        className="flex items-center rounded-xl px-3 py-3 text-left font-display text-[15px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        Account
+                      </button>
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center rounded-xl px-3 py-3 text-left font-display text-[15px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        Sign out
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => { setMenuOpen(false); navigate('/auth'); }}
+                      className="inline-flex h-11 items-center justify-center rounded-xl border border-border font-display text-[15px] font-semibold text-foreground transition-colors hover:bg-muted"
+                    >
+                      Sign in / Create account
+                    </button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
