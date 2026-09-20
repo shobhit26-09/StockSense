@@ -9,6 +9,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import RequireAuth from '@/components/RequireAuth';
 import PremiumLoader from '@/components/PremiumLoader';
 import AnalyticsConsent from '@/components/AnalyticsConsent';
+import AnalyticsPageView from '@/components/AnalyticsPageView';
 
 const Index = lazy(() => import('./pages/Index'));
 const StockAnalysis = lazy(() => import('./pages/StockAnalysis'));
@@ -42,6 +43,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AnalyticsConsent />
+          <AnalyticsPageView />
           <Suspense fallback={<PremiumLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />

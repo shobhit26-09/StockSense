@@ -8,7 +8,15 @@ const AnalyticsConsent = () => {
   if (!visible) return null;
 
   const choose = (consent: 'granted' | 'denied') => {
-    setAnalyticsConsent(consent);
+    void setAnalyticsConsent(consent).then(() => {
+      if (consent === 'granted') {
+        window.gtag('event', 'page_view', {
+          page_path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+          page_location: window.location.href,
+          page_title: document.title,
+        });
+      }
+    });
     setVisible(false);
   };
 
