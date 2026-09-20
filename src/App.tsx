@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import RequireAuth from '@/components/RequireAuth';
 import PremiumLoader from '@/components/PremiumLoader';
+import AnalyticsConsent from '@/components/AnalyticsConsent';
 
 const Index = lazy(() => import('./pages/Index'));
 const StockAnalysis = lazy(() => import('./pages/StockAnalysis'));
@@ -40,6 +41,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AnalyticsConsent />
           <Suspense fallback={<PremiumLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
