@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Menu, Search, TrendingUp, UserRound } from 'lucide-react';
+import { LogOut, Menu, Search, UserRound } from 'lucide-react';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import ThemeToggle from './ThemeToggle';
 import { searchStocks } from '@/services/stockSearchService';
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import StockSenseMark from './StockSenseMark';
 
 const NAV_LINKS = [
   { to: '/', label: 'Dashboard' },
@@ -24,9 +25,7 @@ const NAV_LINKS = [
 
 const Wordmark = ({ onClick }: { onClick: () => void }) => (
   <button onClick={onClick} className="flex items-center gap-2.5 shrink-0">
-    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-      <TrendingUp className="h-4 w-4" strokeWidth={2.5} />
-    </span>
+    <StockSenseMark className="h-7 w-7 text-[#151518] dark:text-[#f5f5f6]" />
     <span className="font-display text-[17px] font-bold tracking-tight text-foreground">
       StockSense
     </span>
