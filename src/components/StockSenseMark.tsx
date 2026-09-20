@@ -10,9 +10,14 @@ const StockSenseMark = ({ className = 'h-7 w-7' }: StockSenseMarkProps) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <rect width="32" height="32" rx="9" fill="currentColor" />
-    <path d="M8 21.5V17.5M13.5 21.5V13.5M19 21.5V15.75M24 21.5V9.5" stroke="white" strokeWidth="2.25" strokeLinecap="round" />
-    <path d="M8 13.75L13.25 10.5L18.75 12.25L24 7.75" stroke="#36D399" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+    <rect width="32" height="32" rx="8" fill="#111417" stroke="#30353A" />
+    <path
+      d="M23.5 8.5H13.75L8.5 13.75L13.75 19H19.75L24.5 23.75L19.25 29H8.5"
+      stroke="#2ED6A1"
+      strokeWidth="3.6"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
+    />
   </svg>
 );
 
