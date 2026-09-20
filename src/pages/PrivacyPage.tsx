@@ -51,9 +51,10 @@ const PrivacyPage = () => (
 
       <Section title="Analytics">
         <p>
-          StockSense may use privacy-friendly, cookie-free analytics to understand aggregate
-          traffic. We do not use analytics to identify individual visitors, and we do not sell
-          or share visitor data with advertisers.
+          StockSense uses Google Analytics 4 to understand aggregate traffic, such as page views,
+          device type and approximate region. Analytics storage is denied by default and only turns
+          on after you choose “Allow analytics.” You can clear that choice in your browser storage.
+          We do not sell visitor data.
         </p>
       </Section>
 
