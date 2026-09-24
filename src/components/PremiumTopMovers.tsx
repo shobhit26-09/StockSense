@@ -1,61 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, TrendingDown, Zap, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import CompanyLogo from '@/components/CompanyLogo';
+import Sparkline from '@/components/Sparkline';
 import { fetchTopMovers, type TopMover, type TopMoversData } from '@/services/topMoversService';
+import { fetchHistory, type HistorySeries } from '@/services/historyService';
+import { isSimulatedSource } from '@/config/showcase';
 import { useNavigate } from 'react-router-dom';
-
-const SparklineChart = ({ data, isPositive }: { data: number[]; isPositive: boolean }) => {
-  const w = 64, h = 20, p = 2;
-  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
-  const points = data.map((v, i) => {
-    const x = p + (i / (data.length - 1)) * (w - p * 2);
-    const y = h - p - ((v - min) / range) * (h - p * 2);
-    return `${x},${y}`;
-  }).join(' ');
-  return (
-    <svg width={w} height={h} className="flex-shrink-0">
-      <polyline fill="none" stroke={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}
-        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" points={points} />
-    </svg>
-  );
-};
-
-const generateSparkline = (isPositive: boolean, changePercent = 0): number[] => {
-  // Deterministic shape anchored to the live daily move; no invented randomness.
-  const magnitude = Math.min(28, Math.abs(changePercent) * 3);
-  const start = isPositive ? 50 - magnitude / 2 : 50 + magnitude / 2;
-  const end = isPositive ? 50 + magnitude / 2 : 50 - magnitude / 2;
-  return Array.from({ length: 18 }, (_, i) => {
-    const t = i / 17;
-    const curve = Math.sin(t * Math.PI * 2) * Math.min(3, magnitude / 6);
-    return Math.max(5, Math.min(95, start + (end - start) * t + curve));
-  });
-};
-
-const formatVolume = (n: number) =>
-  n >= 10000000 ? (n / 10000000).toFixed(1) + 'Cr' :
-  n >= 100000  ? (n / 100000).toFixed(1) + 'L' :
-  n.toLocaleString('en-IN');
-
-interface StockRow extends TopMover { sparkline: number[] }
 
 const PremiumTopMovers = () => {
   const [activeTab, setActiveTab] = useState<'gainers' | 'losers'>('gainers');
+  const [userPicked, setUserPicked] = useState(false);
   const [data, setData] = useState<TopMoversData | null>(null);
-  const [rows, setRows] = useState<{ gainers: StockRow[]; losers: StockRow[] }>({ gainers: [], losers: [] });
+  const [sparks, setSparks] = useState<Record<string, HistorySeries>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
-
-  const enrich = (stocks: TopMover[], pos: boolean): StockRow[] =>
-    stocks.map(s => ({ ...s, sparkline: generateSparkline(pos) }));
 
   const load = useCallback(async (force = false) => {
     if (force) setIsRefreshing(true); else setIsLoading(true);
     try {
       const result = await fetchTopMovers(force);
       setData(result);
-      setRows({ gainers: enrich(result.gainers, true), losers: enrich(result.losers, false) });
     } catch (e) {
       console.error('[TopMovers]', e);
     } finally {
@@ -70,119 +35,158 @@ const PremiumTopMovers = () => {
     return () => clearInterval(t);
   }, [load]);
 
-  const display = activeTab === 'gainers' ? rows.gainers.slice(0, 6) : rows.losers.slice(0, 6);
+  // On a one-sided day, open the side that actually has stocks.
+  useEffect(() => {
+    if (!data || userPicked) return;
+    if (!data.gainers.length && data.losers.length) setActiveTab('losers');
+    else if (!data.losers.length && data.gainers.length) setActiveTab('gainers');
+  }, [data, userPicked]);
 
-  const handleRowClick = (symbol: string) => {
-    const formatted = symbol.includes('.NS') ? symbol : `${symbol}.NS`;
-    navigate(`/stock/${formatted}`);
-  };
+  const list: TopMover[] = data ? (activeTab === 'gainers' ? data.gainers : data.losers).slice(0, 6) : [];
+
+  useEffect(() => {
+    const missing = list.map((s) => s.symbol).filter((s) => !sparks[s]);
+    if (!missing.length) return;
+    let alive = true;
+    Promise.all(missing.map((s) => fetchHistory(s, '1mo'))).then((all) => {
+      if (!alive) return;
+      setSparks((prev) => {
+        const next = { ...prev };
+        all.forEach((h) => { if (h.source === 'yahoo') next[h.symbol] = h; });
+        return next;
+      });
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, activeTab]);
+
+  const pickTab = (t: 'gainers' | 'losers') => { setUserPicked(true); setActiveTab(t); };
+  const handleRowClick = (symbol: string) => navigate(`/stock/${symbol.includes('.NS') ? symbol : `${symbol}.NS`}`);
+  const simulated = isSimulatedSource(data?.source);
+  const counts = { gainers: data?.gainers.length ?? 0, losers: data?.losers.length ?? 0 };
 
   return (
-    <div className="premium-card p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">Top Market Movers</h2>
+    <div className="premium-card overflow-hidden p-5 md:p-6">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex rounded-full bg-muted/40 p-1">
+          {(['gainers', 'losers'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => pickTab(t)}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                activeTab === t
+                  ? t === 'gainers' ? 'bg-success/15 text-success' : 'bg-destructive/15 text-destructive'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t === 'gainers' ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+              {t === 'gainers' ? 'Gainers' : 'Losers'}
+              {data && <span className="font-mono text-[10px] opacity-70">{counts[t]}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
           {data && (
-            <span className="text-[10px] text-muted-foreground font-mono">
-              {data.timestamp.toLocaleTimeString()} · {data.source}
+            <span className="hidden font-mono text-[10.5px] text-muted-foreground sm:inline">
+              {data.timestamp.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} · {simulated ? 'Sample data' : data.source}
             </span>
           )}
+          <button
+            onClick={() => load(true)}
+            disabled={isRefreshing}
+            aria-label="Refresh movers"
+            className="rounded-full p-2 text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
-        <button
-          onClick={() => load(true)}
-          disabled={isRefreshing}
-          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-all"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-        </button>
       </div>
 
-      {/* Tab toggle */}
-      <div className="flex bg-muted/20 rounded-lg p-1 mb-4 w-fit gap-1">
-        <button
-          onClick={() => setActiveTab('gainers')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            activeTab === 'gainers'
-              ? 'bg-success/15 text-success'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <TrendingUp className="w-3 h-3" /> Gainers
-        </button>
-        <button
-          onClick={() => setActiveTab('losers')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            activeTab === 'losers'
-              ? 'bg-destructive/15 text-destructive'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <TrendingDown className="w-3 h-3" /> Losers
-        </button>
+      {simulated && (
+        <div className="mb-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-[11px] text-warning">
+          Live movers feed is unavailable. Showing sample rows.
+        </div>
+      )}
+
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-4 border-b border-border/50 pb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <span>Company</span>
+        <span className="hidden text-right sm:block">1M trend</span>
+        <span className="text-right">Price · Day</span>
       </div>
 
-      {/* Table */}
-      <div>
-        <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 pb-2 border-b border-border/40 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-          <span>Company</span>
-          <span className="text-right hidden sm:block">7D Trend</span>
-          <span className="text-right">Price / Change</span>
-        </div>
-
-        <div className="divide-y divide-border/20">
-          {isLoading && display.length === 0 ? (
-            [...Array(5)].map((_, i) => (
-              <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-x-4 py-3 items-center">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-7 w-7 rounded-lg bg-muted/20 animate-pulse" />
-                  <div className="h-4 w-28 bg-muted/20 rounded animate-pulse" />
-                </div>
-                <div className="h-5 w-16 bg-muted/10 rounded animate-pulse hidden sm:block" />
-                <div className="h-4 w-24 bg-muted/20 rounded animate-pulse" />
+      <div className="divide-y divide-border/30">
+        {isLoading && !data ? (
+          [...Array(6)].map((_, i) => (
+            <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 py-3.5">
+              <div className="flex items-center gap-3">
+                <div className="shimmer h-9 w-9 rounded-xl" />
+                <div className="shimmer h-4 w-32 rounded" />
               </div>
-            ))
-          ) : display.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground text-xs">No data available</div>
-          ) : (
-            display.map((stock) => {
-              const pos = stock.changePercent >= 0;
-              return (
-                <button
-                  key={stock.symbol}
-                  onClick={() => handleRowClick(stock.symbol)}
-                  className="w-full grid grid-cols-[1fr_auto_auto] gap-x-4 py-3 items-center hover:bg-muted/10 transition-colors text-left rounded-lg -mx-2 px-2"
-                >
-                  {/* Name */}
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" />
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-foreground truncate">{stock.name}</div>
-                      <div className="text-[10px] text-muted-foreground font-mono">{stock.symbol}</div>
+              <div className="shimmer hidden h-6 w-24 rounded sm:block" />
+              <div className="shimmer h-4 w-20 rounded" />
+            </div>
+          ))
+        ) : list.length === 0 ? (
+          <div className="flex flex-col items-center gap-1 py-10 text-center">
+            <span className="text-sm font-medium text-foreground">
+              {activeTab === 'gainers' ? 'No gainers today' : 'No losers today'}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Every tracked stock moved the other way.{' '}
+              <button className="font-semibold text-foreground underline-offset-2 hover:underline" onClick={() => pickTab(activeTab === 'gainers' ? 'losers' : 'gainers')}>
+                See {activeTab === 'gainers' ? 'losers' : 'gainers'}
+              </button>
+            </span>
+          </div>
+        ) : (
+          list.map((stock) => {
+            const pos = stock.changePercent >= 0;
+            const sp = sparks[stock.symbol];
+            const rangePct = stock.high && stock.low && stock.high > stock.low
+              ? ((stock.price - stock.low) / (stock.high - stock.low)) * 100 : null;
+            return (
+              <button
+                key={stock.symbol}
+                onClick={() => handleRowClick(stock.symbol)}
+                className="-mx-2 grid w-[calc(100%+1rem)] grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 rounded-xl px-2 py-3 text-left transition-colors hover:bg-muted/30"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <CompanyLogo symbol={stock.symbol} name={stock.name} size="md" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-semibold text-foreground">{stock.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10.5px] text-muted-foreground">{stock.symbol}</span>
+                      {rangePct !== null && (
+                        <span className="relative hidden h-1 w-14 rounded-full bg-muted md:inline-block" title="Position in today's range">
+                          <span className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/80" style={{ left: `${Math.max(4, Math.min(96, rangePct))}%` }} />
+                        </span>
+                      )}
                     </div>
                   </div>
-                  {/* Sparkline */}
-                  <div className="hidden sm:block">
-                    <SparklineChart data={stock.sparkline} isPositive={pos} />
+                </div>
+                <div className="hidden sm:block">
+                  {sp ? (
+                    <Sparkline values={sp.points.map((p) => p.c)} positive={sp.points[sp.points.length - 1].c >= sp.points[0].c} width={96} height={30} />
+                  ) : (
+                    <span className="block h-[30px] w-24" />
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-[13px] text-foreground">
+                    ₹{stock.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                   </div>
-                  {/* Price */}
-                  <div className="text-right">
-                    <div className="text-xs font-mono text-foreground">
-                      ₹{stock.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                    </div>
-                    <div className={`text-[10px] font-mono font-medium ${pos ? 'text-success' : 'text-destructive'}`}>
-                      {pos ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                    </div>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
+                  <span className={`mt-0.5 inline-block rounded-md px-1.5 py-0.5 font-mono text-[10.5px] font-medium ${pos ? 'status-positive' : 'status-negative'}`}>
+                    {pos ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                  </span>
+                </div>
+              </button>
+            );
+          })
+        )}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-border/40 text-[10px] text-muted-foreground text-center">
-        NIFTY 500 basket · Click row to analyze
+      <div className="mt-3 border-t border-border/40 pt-3 text-center text-[10.5px] text-muted-foreground">
+        NIFTY 500 basket · tap a row to analyze
       </div>
     </div>
   );

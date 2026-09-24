@@ -2,10 +2,12 @@ import PremiumNavbar from '@/components/PremiumNavbar';
 import PremiumStockTicker from '@/components/PremiumStockTicker';
 import MarketHero from '@/components/MarketHero';
 import FeatureGrid from '@/components/FeatureGrid';
+import MarketMap from '@/components/MarketMap';
+import StockSenseMark from '@/components/StockSenseMark';
 import PremiumTopMovers from '@/components/PremiumTopMovers';
 import PremiumNewsFeed from '@/components/PremiumNewsFeed';
 import { Link } from 'react-router-dom';
-import { ArrowRight, TrendingUp } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Seo from '@/components/Seo';
 import FaqSection from '@/components/FaqSection';
 import ShowcaseNotice from '@/components/ShowcaseNotice';
@@ -41,7 +43,7 @@ const Index = () => (
         <MarketHero />
 
         <section className="mt-5">
-          <FeatureGrid />
+          <MarketMap />
         </section>
 
         <section className="mt-14 grid lg:grid-cols-3 gap-5">
@@ -55,15 +57,17 @@ const Index = () => (
           </div>
         </section>
 
+        <section className="mt-16">
+          <FeatureGrid />
+        </section>
+
         <FaqSection />
 
         <footer className="mt-20 border-t border-border pt-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <TrendingUp className="h-4 w-4" strokeWidth={2.5} />
-                </span>
+                <StockSenseMark className="h-7 w-7" />
                 <span className="font-display text-sm font-bold tracking-tight">StockSense</span>
               </div>
               <p className="mt-4 text-sm text-muted-foreground max-w-xs leading-relaxed">
