@@ -1,3 +1,4 @@
+import PremiumLoader from '@/components/PremiumLoader';
 
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Search, Maximize2, RefreshCw } from 'lucide-react';
@@ -253,10 +254,7 @@ const StockChart = ({ data, onSearchClick }: StockChartProps) => {
       <div className="relative">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg z-10">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              <span>Loading chart</span>
-            </div>
+            <PremiumLoader size="sm" text="Loading chart" className="py-0" />
           </div>
         )}
 

@@ -1,5 +1,6 @@
 
 // Comprehensive Indian stock list and search functionality
+import universe from '@/data/nseUniverse.json';
 export interface StockInfo {
   symbol: string;
   name: string;
@@ -94,38 +95,54 @@ const indianStocks: StockInfo[] = [
   { symbol: 'PAYTM.NS', name: 'One 97 Communications Limited', exchange: 'NSE', sector: 'Fintech' },
 ];
 
-export const searchStocks = (query: string, limit: number = 10): StockInfo[] => {
-  if (!query.trim()) {
-    return indianStocks.slice(0, limit);
+// Curated list first (hand-tuned sectors), then every Nifty Total Market
+// constituent (~750 NSE stocks) from the official niftyindices.com lists.
+const allStocks: StockInfo[] = (() => {
+  const seen = new Set(indianStocks.map((s) => s.symbol.toUpperCase()));
+  const extra: StockInfo[] = [];
+  for (const [sym, name, industry] of (universe as { u: [string, string, string][] }).u) {
+    const symbol = `${sym}.NS`;
+    if (seen.has(symbol.toUpperCase())) continue;
+    seen.add(symbol.toUpperCase());
+    extra.push({ symbol, name, exchange: 'NSE', sector: industry });
   }
+  return [...indianStocks, ...extra];
+})();
 
-  const searchTerm = query.toLowerCase().trim();
-  
-  // Search by symbol, name, and sector
-  const filtered = indianStocks.filter(stock => {
-    const symbolMatch = stock.symbol.toLowerCase().includes(searchTerm);
-    const nameMatch = stock.name.toLowerCase().includes(searchTerm);
-    const sectorMatch = stock.sector?.toLowerCase().includes(searchTerm);
-    
-    return symbolMatch || nameMatch || sectorMatch;
-  });
+export const STOCK_UNIVERSE_SIZE = allStocks.length;
 
-  // Sort by relevance - exact symbol matches first, then name matches
-  return filtered.sort((a, b) => {
-    const aSymbolExact = a.symbol.toLowerCase().startsWith(searchTerm);
-    const bSymbolExact = b.symbol.toLowerCase().startsWith(searchTerm);
-    
-    if (aSymbolExact && !bSymbolExact) return -1;
-    if (!aSymbolExact && bSymbolExact) return 1;
-    
-    const aNameExact = a.name.toLowerCase().startsWith(searchTerm);
-    const bNameExact = b.name.toLowerCase().startsWith(searchTerm);
-    
-    if (aNameExact && !bNameExact) return -1;
-    if (!aNameExact && bNameExact) return 1;
-    
-    return a.name.localeCompare(b.name);
-  }).slice(0, limit);
+const bare = (sym: string) => sym.toLowerCase().replace(/\.(ns|bo)$/, '');
+
+export const searchStocks = (query: string, limit: number = 10): StockInfo[] => {
+  if (!query.trim()) return allStocks.slice(0, limit);
+  const term = query.toLowerCase().trim();
+
+  const score = (s: StockInfo): number => {
+    const sym = bare(s.symbol);
+    const name = s.name.toLowerCase();
+    if (sym === term) return 0;
+    if (sym.startsWith(term)) return 1;
+    if (name.startsWith(term)) return 2;
+    if (name.split(/\s+/).some((w) => w.startsWith(term))) return 3;
+    if (sym.includes(term)) return 4;
+    if (name.includes(term)) return 5;
+    if (term.length >= 3 && s.sector?.toLowerCase().includes(term)) return 6;
+    return -1;
+  };
+
+  const ranked = allStocks
+    .map((s) => ({ s, r: score(s) }))
+    .filter((x) => x.r >= 0)
+    .sort((a, b) => a.r - b.r || a.s.name.localeCompare(b.s.name))
+    .map((x) => x.s)
+    .slice(0, limit);
+
+  // Anything listed on NSE but outside the bundled list can still be opened
+  // by symbol; the analysis page resolves it against the live feed.
+  if (/^[a-z0-9&-]{2,20}$/i.test(term) && !ranked.some((s) => bare(s.symbol) === term)) {
+    ranked.push({ symbol: `${term.toUpperCase()}.NS`, name: `Open ${term.toUpperCase()} on NSE`, exchange: 'NSE', sector: 'Direct symbol lookup' });
+  }
+  return ranked.slice(0, Math.max(limit, ranked.length));
 };
 
 export const getPopularStocks = (): StockInfo[] => {

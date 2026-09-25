@@ -5,9 +5,9 @@ const MoversPage = () => (
   <PageShell
     eyebrow="Momentum"
     title="Top movers"
-    sub="Today's leaders and laggards across NIFTY indices."
+    sub="Gainers, losers and volume shockers across NIFTY 100, 500, Midcap, Smallcap and Total Market."
   >
-    <PremiumTopMovers />
+    <PremiumTopMovers limit={20} expandable />
   </PageShell>
 );
 

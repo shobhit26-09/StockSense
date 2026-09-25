@@ -49,7 +49,7 @@ const Index = () => (
         <section className="mt-14 grid lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 min-w-0">
             <SectionHead title="Today's movers" to="/movers" />
-            <PremiumTopMovers />
+            <PremiumTopMovers limit={8} />
           </div>
           <div className="min-w-0">
             <SectionHead title="Live news" to="/news" />

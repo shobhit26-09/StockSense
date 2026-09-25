@@ -377,3 +377,16 @@
 
 .treemap-tile rect:first-child { transition: filter 0.2s ease; }
 .treemap-tile:hover rect:first-child { filter: brightness(1.25); }
+.hero-swap { animation: hero-swap-in 0.45s var(--ease-spring) both; }
+@keyframes hero-swap-in { from { opacity: 0; transform: translateY(6px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Brand loader */
+.ss-loader-stroke { stroke-dasharray: 100; stroke-dashoffset: 100; animation: ss-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+@keyframes ss-draw { 0% { stroke-dashoffset: 100; } 55% { stroke-dashoffset: 0; } 80% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.ss-loader-glow { background: radial-gradient(circle, hsl(161 67% 51% / 0.28), transparent 65%); filter: blur(10px); animation: ss-breathe 1.6s ease-in-out infinite; }
+@keyframes ss-breathe { 0%, 100% { opacity: 0.35; transform: scale(0.92); } 50% { opacity: 0.8; transform: scale(1.05); } }
+.ss-loader-bar::after { content: ''; position: absolute; inset: 0; width: 40%; border-radius: 9999px; background: linear-gradient(90deg, transparent, #2ED6A1, transparent); animation: ss-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+@keyframes ss-sweep { from { transform: translateX(-110%); } to { transform: translateX(260%); } }
+@media (prefers-reduced-motion: reduce) { .ss-loader-stroke { animation: none; stroke-dashoffset: 0; } .ss-loader-glow, .ss-loader-bar::after { animation: none; } }

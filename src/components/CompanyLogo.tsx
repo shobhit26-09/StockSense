@@ -59,6 +59,10 @@ const CompanyLogo = ({ symbol, name, size = 'sm', className = '' }: CompanyLogoP
         loading="lazy"
         referrerPolicy="no-referrer"
         className="h-[72%] w-[72%] object-contain"
+        onLoad={(e) => {
+          // Google answers unknown domains with a 16px generic globe; use the initials tile instead.
+          if (e.currentTarget.naturalWidth <= 16) setFailed(true);
+        }}
         onError={() => setFailed(true)}
       />
     </span>

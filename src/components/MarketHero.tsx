@@ -25,12 +25,13 @@ const RANGES: { key: HistoryRange; label: string }[] = [
   { key: '5y', label: '5Y' },
 ];
 
-const TILES = [
+const INDICES = [
+  { symbol: '^NSEI', label: 'NIFTY 50' },
   { symbol: '^BSESN', label: 'SENSEX' },
   { symbol: '^NSEBANK', label: 'BANK NIFTY' },
   { symbol: '^CNXIT', label: 'NIFTY IT' },
   { symbol: '^INDIAVIX', label: 'INDIA VIX', invert: true },
-];
+] as { symbol: string; label: string; invert?: boolean }[];
 
 const fmt = (n: number, d = 2) => n.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -40,6 +41,8 @@ const MarketHero = () => {
   const [range, setRange] = useState<HistoryRange>('6mo');
   const [series, setSeries] = useState<HistorySeries | null>(null);
   const [sparks, setSparks] = useState<Record<string, HistorySeries>>({});
+  const [selected, setSelected] = useState(INDICES[0]);
+  const TILES = INDICES.filter((i) => i.symbol !== selected.symbol);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -47,7 +50,7 @@ const MarketHero = () => {
   }, []);
 
   useEffect(() => {
-    const load = async () => setQuotes(await fetchMultipleQuotesRacing(['^NSEI', ...TILES.map((t) => t.symbol)], 8000));
+    const load = async () => setQuotes(await fetchMultipleQuotesRacing(INDICES.map((t) => t.symbol), 8000));
     load();
     const t = setInterval(load, 20000);
     return () => clearInterval(t);
@@ -56,12 +59,12 @@ const MarketHero = () => {
   useEffect(() => {
     let alive = true;
     setSeries(null);
-    fetchHistory('^NSEI', range).then((s) => alive && setSeries(s));
+    fetchHistory(selected.symbol, range).then((s) => alive && setSeries(s));
     return () => { alive = false; };
-  }, [range]);
+  }, [range, selected.symbol]);
 
   useEffect(() => {
-    Promise.all(TILES.map((t) => fetchHistory(t.symbol, '1mo'))).then((all) => {
+    Promise.all(INDICES.map((t) => fetchHistory(t.symbol, '1mo'))).then((all) => {
       const next: Record<string, HistorySeries> = {};
       all.forEach((s) => { next[s.symbol] = s; });
       setSparks(next);
@@ -69,7 +72,7 @@ const MarketHero = () => {
   }, []);
 
   const s = sessionInfo(now);
-  const nifty = quotes.get('^NSEI');
+  const nifty = quotes.get(selected.symbol);
 
   const chart = useMemo(() => {
     if (!series) return null;
@@ -144,7 +147,7 @@ const MarketHero = () => {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/55">NIFTY 50</span>
+                  <span key={selected.symbol} className="hero-swap text-[12px] font-semibold uppercase tracking-[0.14em] text-white/55">{selected.label}</span>
                   {series?.source === 'sample' && (
                     <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">Sample data · feed offline</span>
                   )}
@@ -179,7 +182,7 @@ const MarketHero = () => {
               </div>
             </div>
 
-            <div className="relative mt-4 h-[200px] md:h-[220px]">
+            <div key={selected.symbol} className="hero-swap relative mt-4 h-[200px] md:h-[220px]">
               {chart ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chart.pts} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
@@ -222,7 +225,13 @@ const MarketHero = () => {
                 const good = t.invert ? !pos : pos;
                 const trendUp = sp ? sp.points[sp.points.length - 1].c >= sp.points[0].c : pos;
                 return (
-                  <div key={t.symbol} className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-3 transition-colors hover:bg-white/[0.06]">
+                  <button
+                    type="button"
+                    key={t.symbol}
+                    onClick={() => setSelected(t)}
+                    aria-label={`Show ${t.label} chart`}
+                    className="group rounded-2xl border border-white/[0.07] bg-white/[0.035] p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.07] active:scale-[0.98]"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.1em] text-white/45 sm:text-[10.5px]">{t.label}</span>
                       {q && (
@@ -237,12 +246,12 @@ const MarketHero = () => {
                       </span>
                       {sp && <Sparkline values={sp.points.map((p) => p.c)} positive={t.invert ? !trendUp : trendUp} width={72} height={26} className="max-sm:h-[22px] max-sm:w-full" />}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
             <div className="mt-3 flex items-center justify-between text-[10.5px] text-white/35">
-              <span>Daily closes · Yahoo Finance{Object.values(sparks).some((x) => x.source === 'sample') ? ' · some sparklines are sample data' : ''}</span>
+              <span>Tap an index to chart it · Daily closes · Yahoo Finance{Object.values(sparks).some((x) => x.source === 'sample') ? ' · some sparklines are sample data' : ''}</span>
               <Link to="/macro" className="inline-flex items-center gap-1 font-semibold text-white/55 transition-colors hover:text-white">
                 Global context <ArrowRight className="h-3 w-3" />
               </Link>
