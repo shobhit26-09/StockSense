@@ -1,4 +1,4 @@
-import CountryShape from '@/components/CountryShape';
+import CountryFlag from '@/components/CountryFlag';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -213,12 +213,11 @@ const AllIndicesPanel = () => {
                 <tr key={`${idx.group}-${idx.label}`} className="border-t border-border/60 hover:bg-muted/30 transition-colors">
                   <td className="py-4 pl-5 md:pl-7">
                     <div className="flex items-center gap-2.5 sm:gap-3">
-                      <CountryShape
-                        iso={idx.country ?? (idx.group === 'IN' ? '356' : '')}
+                      <CountryFlag
                         code={ISO_CODE[idx.country ?? ''] ?? (idx.group === 'IN' ? 'IN' : '—')}
-                        size={38}
-                        tone={!q || q.change === 0 ? 'flat' : q.change > 0 ? 'up' : 'down'}
-                      />
+                        name={idx.countryName ?? (idx.group === 'IN' ? 'India' : undefined)}
+                        width={32}
+                        />
                       <div className="min-w-0">
                         <div className="font-medium text-foreground">{idx.label}</div>
                         <div className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
@@ -230,11 +229,11 @@ const AllIndicesPanel = () => {
                   <td className="py-4 text-right font-mono font-semibold text-foreground tabular-nums">
                     {q ? fmt(q.price, dec) : '—'}
                   </td>
-                  <td className={`py-4 text-right font-mono tabular-nums ${pos ? 'text-success' : 'text-destructive'}`}>
+                  <td className={`py-4 pl-3 text-right font-mono tabular-nums whitespace-nowrap ${pos ? 'text-success' : 'text-destructive'}`}>
                     {q ? (
                       <>
                         {pos ? '+' : ''}{fmt(q.change, dec)}{' '}
-                        <span className="opacity-80">({pos ? '+' : ''}{q.changePercent.toFixed(2)}%)</span>
+                        <span className="block sm:inline opacity-80">({pos ? '+' : ''}{q.changePercent.toFixed(2)}%)</span>
                       </>
                     ) : '—'}
                   </td>
