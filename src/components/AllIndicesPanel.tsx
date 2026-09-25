@@ -1,3 +1,4 @@
+import CountryShape from '@/components/CountryShape';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,7 +57,7 @@ const timeStr = (ts: number) => {
   const d = new Date(ts);
   const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   const tm = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  return `${day}, ${tm}`;
+  return { day, tm };
 };
 
 const AllIndicesPanel = () => {
@@ -211,14 +212,17 @@ const AllIndicesPanel = () => {
               return (
                 <tr key={`${idx.group}-${idx.label}`} className="border-t border-border/60 hover:bg-muted/30 transition-colors">
                   <td className="py-4 pl-5 md:pl-7">
-                    <div className="flex items-center gap-3">
-                      <span className="shrink-0 w-7 h-7 rounded-md border border-border bg-muted/50 grid place-items-center text-[10px] font-mono font-semibold tracking-wide text-muted-foreground">
-                        {ISO_CODE[idx.country ?? ''] ?? (idx.group === 'IN' ? 'IN' : '—')}
-                      </span>
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <CountryShape
+                        iso={idx.country ?? (idx.group === 'IN' ? '356' : '')}
+                        code={ISO_CODE[idx.country ?? ''] ?? (idx.group === 'IN' ? 'IN' : '—')}
+                        size={38}
+                        tone={!q || q.change === 0 ? 'flat' : q.change > 0 ? 'up' : 'down'}
+                      />
                       <div className="min-w-0">
                         <div className="font-medium text-foreground">{idx.label}</div>
-                        <div className="text-[11px] text-muted-foreground font-mono">
-                          {q ? timeStr(q.fetchedAt) : (loading ? 'Loading…' : '—')}
+                        <div className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
+                          {q ? (<><span className="hidden sm:inline">{timeStr(q.fetchedAt).day}, </span>{timeStr(q.fetchedAt).tm}</>) : (loading ? 'Loading…' : '—')}
                         </div>
                       </div>
                     </div>
