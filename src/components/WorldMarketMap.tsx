@@ -1,3 +1,4 @@
+import CountryFlag from '@/components/CountryFlag';
 import { useMemo, useState } from 'react';
 import { Globe2 } from 'lucide-react';
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps';
@@ -199,7 +200,7 @@ const WorldMarketMap = ({ countries }: Props) => {
 
       {selectedMarket && !hovered && (
         <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/35 px-3.5 py-3 backdrop-blur-2xl md:left-auto md:right-4 md:w-[280px]">
-          <div className="min-w-0"><div className="text-[10px] uppercase tracking-[.16em] text-white/45">Selected market</div><div className="truncate text-sm font-semibold text-white">{selectedMarket.flag} {selectedMarket.name}</div></div>
+          <div className="flex min-w-0 items-center gap-3"><CountryFlag code={SHORT[selectedMarket.iso] ?? selectedMarket.code} name={selectedMarket.name} width={30} /><div className="min-w-0"><div className="text-[10px] uppercase tracking-[.16em] text-white/45">Selected market</div><div className="truncate text-sm font-semibold text-white">{selectedMarket.name}</div></div></div>
           <div className="text-right font-mono text-xs">{selectedMarket.indices.slice(0,1).map(i => <div key={i.symbol}><div className="text-white/65">{i.label}</div><div className={i.changePercent >= 0 ? 'text-emerald-300' : 'text-rose-300'}>{i.changePercent >= 0 ? '+' : ''}{i.changePercent.toFixed(2)}%</div></div>)}</div>
         </div>
       )}

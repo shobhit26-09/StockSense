@@ -6,6 +6,25 @@ interface PremiumNewsFeedProps {
   symbol?: string;
 }
 
+
+const SourceLogo = ({ url, source }: { url?: string; source?: string }) => {
+  const [failed, setFailed] = useState(false);
+  let host = '';
+  try { host = url ? new URL(url).hostname.replace(/^www\./, '') : ''; } catch { host = ''; }
+  if (!host || failed) {
+    return (
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-[10px] font-semibold text-muted-foreground">
+        {(source || '?').slice(0, 2).toUpperCase()}
+      </span>
+    );
+  }
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-white">
+      <img src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-5 w-5" onError={() => setFailed(true)} />
+    </span>
+  );
+};
+
 const PremiumNewsFeed = ({ symbol }: PremiumNewsFeedProps) => {
   const [news, setNews] = useState<RealTimeNewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +114,7 @@ const PremiumNewsFeed = ({ symbol }: PremiumNewsFeedProps) => {
 
       <div className="flex-1 overflow-hidden">
         <div className="divide-y divide-border/30">
-          {news.map((article, index) => (
+          {news.slice(0, 7).map((article, index) => (
             <a
               key={article.id || index}
               href={article.url}
@@ -103,13 +122,14 @@ const PremiumNewsFeed = ({ symbol }: PremiumNewsFeedProps) => {
               rel="noopener noreferrer"
               className="flex items-start gap-3 py-3 group hover:bg-muted/20 -mx-2 px-2 rounded-lg transition-colors"
             >
-              <div className="mt-1">{getSentimentIcon(article.sentiment)}</div>
+              <SourceLogo url={article.url} source={article.source} />
               <div className="flex-1 min-w-0">
-                <h4 className="text-xs text-foreground/90 group-hover:text-primary transition-colors line-clamp-2 mb-1 leading-relaxed font-medium">
+                <h4 className="text-[13px] text-foreground/90 group-hover:text-primary transition-colors line-clamp-2 mb-1 leading-relaxed font-medium">
                   {article.title}
                 </h4>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                  <span className="font-medium truncate max-w-[100px]">{article.source}</span>
+                  <span className="font-medium truncate max-w-[120px]">{article.source}</span>
+                  <span className="opacity-80">{getSentimentIcon(article.sentiment)}</span>
                   <span>·</span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-2.5 h-2.5" />
