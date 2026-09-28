@@ -18,6 +18,7 @@ const sessionInfo = (d: Date) => {
 };
 
 const RANGES: { key: HistoryRange; label: string }[] = [
+  { key: '1d', label: '1D' },
   { key: '1mo', label: '1M' },
   { key: '3mo', label: '3M' },
   { key: '6mo', label: '6M' },
@@ -59,8 +60,16 @@ const MarketHero = () => {
   useEffect(() => {
     let alive = true;
     setSeries(null);
-    fetchHistory(selected.symbol, range).then((s) => alive && setSeries(s));
-    return () => { alive = false; };
+    const load = () => fetchHistory(selected.symbol, range).then((s) => alive && setSeries(s));
+    load();
+    // Intraday line tracks the session: refresh on the same ~60s cadence as
+    // quotes while the market is live; the 1d cache TTL matches this cadence.
+    const t = range === '1d'
+      ? setInterval(() => {
+          if (sessionInfo(new Date()).tone === 'success') load();
+        }, 60_000)
+      : undefined;
+    return () => { alive = false; if (t) clearInterval(t); };
   }, [range, selected.symbol]);
 
   useEffect(() => {
@@ -81,11 +90,17 @@ const MarketHero = () => {
       const last = pts[pts.length - 1];
       if (last && Math.abs(last.c - nifty.price) / nifty.price < 0.08) last.c = nifty.price;
     }
-    const first = pts[0].c;
     const last = pts[pts.length - 1].c;
+    // Intraday baseline: prefer the live quote's previous close (Yahoo's
+    // intraday chartPreviousClose is stale for some BSE indices); sanity-check
+    // against the last traded price so a bad baseline can't skew the chart.
+    const sane = (v?: number) => typeof v === 'number' && Number.isFinite(v) && v > 0 && Math.abs(v - last) / last < 0.2;
+    const first = range === '1d'
+      ? (sane(nifty?.previousClose) ? (nifty!.previousClose as number) : sane(series.prevClose) ? (series.prevClose as number) : pts[0].c)
+      : pts[0].c;
     const change = last - first;
     return { pts, first, last, change, pct: (change / first) * 100, up: change >= 0 };
-  }, [series, nifty]);
+  }, [series, nifty, range]);
 
   const up = chart ? chart.up : (nifty?.changePercent ?? 0) >= 0;
   const color = up ? 'hsl(var(--success))' : 'hsl(var(--destructive))';
@@ -165,7 +180,7 @@ const MarketHero = () => {
                 </div>
                 {chart && (
                   <div className="mt-1 text-[12px] text-white/45">
-                    <span className={chart.up ? 'text-success' : 'text-destructive'}>{chart.pct >= 0 ? '+' : ''}{chart.pct.toFixed(2)}%</span> over {rangeLabel}
+                    <span className={chart.up ? 'text-success' : 'text-destructive'}>{chart.pct >= 0 ? '+' : ''}{chart.pct.toFixed(2)}%</span> {range === '1d' ? 'today' : `over ${rangeLabel}`}
                   </div>
                 )}
               </div>
@@ -194,7 +209,7 @@ const MarketHero = () => {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="t" hide />
-                    <YAxis domain={['dataMin', 'dataMax']} hide />
+                    <YAxis domain={[(dataMin: number) => Math.min(dataMin, chart.first), (dataMax: number) => Math.max(dataMax, chart.first)]} hide />
                     <ReferenceLine y={chart.first} stroke="rgba(255,255,255,0.22)" strokeDasharray="3 4" />
                     <Tooltip
                       cursor={{ stroke: 'rgba(255,255,255,0.35)', strokeWidth: 1 }}
@@ -203,7 +218,9 @@ const MarketHero = () => {
                           <div className="rounded-xl border border-white/10 bg-black/80 px-3 py-2 backdrop-blur-xl">
                             <div className="font-mono text-[13px] text-white">{fmt(payload[0].value as number)}</div>
                             <div className="text-[11px] text-white/50">
-                              {new Date(payload[0].payload.t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {range === '1d'
+                                ? new Date(payload[0].payload.t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
+                                : new Date(payload[0].payload.t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </div>
                           </div>
                         ) : null
@@ -251,7 +268,7 @@ const MarketHero = () => {
               })}
             </div>
             <div className="mt-3 flex items-center justify-between text-[10.5px] text-white/35">
-              <span>Tap an index to chart it · Daily closes · Yahoo Finance{Object.values(sparks).some((x) => x.source === 'sample') ? ' · some sparklines are sample data' : ''}</span>
+              <span>Tap an index to chart it · {range === '1d' ? 'Intraday · 5-min' : 'Daily closes'} · Yahoo Finance{Object.values(sparks).some((x) => x.source === 'sample') ? ' · some sparklines are sample data' : ''}</span>
               <Link to="/macro" className="inline-flex items-center gap-1 font-semibold text-white/55 transition-colors hover:text-white">
                 Global context <ArrowRight className="h-3 w-3" />
               </Link>
