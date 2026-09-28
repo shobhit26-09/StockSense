@@ -377,8 +377,8 @@ async function fetchYahooHistory(symbol: string, range: string): Promise<number[
 
 async function handleStockHistory(symbol: string, range = '1y', interval = '1d') {
   const safeSymbol = String(symbol || '').trim().toUpperCase();
-  const allowedRanges = new Set(['1mo', '3mo', '6mo', '1y', '2y', '5y']);
-  const allowedIntervals = new Set(['1d', '1wk', '1mo']);
+  const allowedRanges = new Set(['1d', '1mo', '3mo', '6mo', '1y', '2y', '5y']);
+  const allowedIntervals = new Set(['5m', '15m', '1d', '1wk', '1mo']);
   if (!safeSymbol || safeSymbol.length > 30) throw new Error('Invalid symbol');
   const safeRange = allowedRanges.has(range) ? range : '1y';
   const safeInterval = allowedIntervals.has(interval) ? interval : '1d';
