@@ -82,7 +82,7 @@ const MarketMap = () => {
   const data: Node[] = useMemo(
     () => MARKET_CONSTITUENTS.map((c) => {
       const q = quotes.get(c.symbol);
-      return { name: c.name, symbol: c.symbol, size: c.w, pct: q?.changePercent, price: q?.price };
+      return { name: c.name, symbol: c.symbol, size: c.w, pct: Number.isFinite(q?.changePercent) ? q.changePercent : undefined, price: q?.price };
     }),
     [quotes],
   );

@@ -76,7 +76,7 @@ export const fetchQuoteRacing = async (symbol: string, _timeout?: number): Promi
     if (error) throw error;
 
     const quoteData = data?.[yahooSymbol];
-    if (quoteData && quoteData.price) {
+    if (quoteData && quoteData.price && Number.isFinite(quoteData.change) && Number.isFinite(quoteData.changePercent) && Number.isFinite(quoteData.previousClose)) {
       const mapping = INDEX_MAPPINGS[symbol];
       const result: StockQuote = {
         symbol,
@@ -146,7 +146,7 @@ export const fetchMultipleQuotesRacing = async (
     for (const [yahooSym, quoteData] of Object.entries(data || {})) {
       const originalSymbol = yahooToOriginal.get(yahooSym) || yahooSym;
       const qd = quoteData as any;
-      if (qd && qd.price) {
+      if (qd && qd.price && Number.isFinite(qd.change) && Number.isFinite(qd.changePercent) && Number.isFinite(qd.previousClose)) {
         const mapping = INDEX_MAPPINGS[originalSymbol];
         const result: StockQuote = {
           symbol: originalSymbol,

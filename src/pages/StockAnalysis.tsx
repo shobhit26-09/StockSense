@@ -139,7 +139,7 @@ const StockAnalysis = () => {
                   { value: 'fundamentals', icon: TrendingUp, label: 'Fundamentals' },
                   { value: 'technical', icon: Activity, label: 'Technical' },
                   { value: 'ai-analysis', icon: Brain, label: 'AI Insight' },
-                  { value: 'prediction', icon: Zap, label: 'Price signals' },
+                  { value: 'prediction', icon: Zap, label: 'ML prediction' },
                 ].map((tab) => (
                   <TabsTrigger
                     key={tab.value}
