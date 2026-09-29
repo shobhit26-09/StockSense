@@ -3,6 +3,7 @@ import PremiumStockTicker from '@/components/PremiumStockTicker';
 import MarketHero from '@/components/MarketHero';
 import FeatureGrid from '@/components/FeatureGrid';
 import MarketMap from '@/components/MarketMap';
+import MarketSentiment from '@/components/MarketSentiment';
 import StockSenseMark from '@/components/StockSenseMark';
 import PremiumTopMovers from '@/components/PremiumTopMovers';
 import PremiumNewsFeed from '@/components/PremiumNewsFeed';
@@ -41,6 +42,8 @@ const Index = () => (
       <div className="max-w-[1200px] mx-auto px-5 lg:px-8">
         <ShowcaseNotice />
         <MarketHero />
+
+        <div className="mt-5"><MarketSentiment /></div>
 
         <section className="mt-5">
           <MarketMap />

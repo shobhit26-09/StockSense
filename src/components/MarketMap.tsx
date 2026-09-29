@@ -3,39 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, Treemap } from 'recharts';
 import { fetchMultipleQuotesRacing, type StockQuote } from '@/services/multiSourceDataService';
 import { domainForSymbol } from '@/data/companyDomains';
+import { MARKET_CONSTITUENTS } from '@/data/marketConstituents';
 
-/**
- * Approximate NIFTY 50 free-float weights (%), used only to size tiles.
- * Colour and figures come from live quotes.
- */
-const CONSTITUENTS: { symbol: string; name: string; w: number; sector: string }[] = [
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', w: 13, sector: 'Banks' },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', w: 9, sector: 'Banks' },
-  { symbol: 'RELIANCE', name: 'Reliance', w: 8.5, sector: 'Energy' },
-  { symbol: 'INFY', name: 'Infosys', w: 5, sector: 'IT' },
-  { symbol: 'BHARTIARTL', name: 'Airtel', w: 4.6, sector: 'Telecom' },
-  { symbol: 'LT', name: 'L&T', w: 4, sector: 'Infra' },
-  { symbol: 'ITC', name: 'ITC', w: 3.5, sector: 'FMCG' },
-  { symbol: 'TCS', name: 'TCS', w: 3, sector: 'IT' },
-  { symbol: 'AXISBANK', name: 'Axis Bank', w: 3, sector: 'Banks' },
-  { symbol: 'KOTAKBANK', name: 'Kotak Bank', w: 2.8, sector: 'Banks' },
-  { symbol: 'SBIN', name: 'SBI', w: 2.8, sector: 'Banks' },
-  { symbol: 'M&M', name: 'M&M', w: 2.5, sector: 'Auto' },
-  { symbol: 'BAJFINANCE', name: 'Bajaj Finance', w: 2.2, sector: 'Finance' },
-  { symbol: 'HINDUNILVR', name: 'HUL', w: 2, sector: 'FMCG' },
-  { symbol: 'SUNPHARMA', name: 'Sun Pharma', w: 1.7, sector: 'Pharma' },
-  { symbol: 'HCLTECH', name: 'HCL Tech', w: 1.6, sector: 'IT' },
-  { symbol: 'ETERNAL', name: 'Eternal', w: 1.6, sector: 'Consumer' },
-  { symbol: 'NTPC', name: 'NTPC', w: 1.5, sector: 'Power' },
-  { symbol: 'MARUTI', name: 'Maruti', w: 1.5, sector: 'Auto' },
-  { symbol: 'TITAN', name: 'Titan', w: 1.3, sector: 'Consumer' },
-  { symbol: 'ULTRACEMCO', name: 'UltraTech', w: 1.2, sector: 'Cement' },
-  { symbol: 'POWERGRID', name: 'Power Grid', w: 1.1, sector: 'Power' },
-  { symbol: 'TATASTEEL', name: 'Tata Steel', w: 1.1, sector: 'Metals' },
-  { symbol: 'ADANIPORTS', name: 'Adani Ports', w: 1, sector: 'Infra' },
-  { symbol: 'ONGC', name: 'ONGC', w: 0.9, sector: 'Energy' },
-  { symbol: 'ASIANPAINT', name: 'Asian Paints', w: 0.9, sector: 'Consumer' },
-];
 
 /** Diverging scale: red -> graphite -> green, saturating at +/-3%. */
 const tileColor = (pct: number | undefined) => {
@@ -48,7 +17,6 @@ const tileColor = (pct: number | undefined) => {
 
 interface Node { name: string; symbol: string; size: number; pct?: number; price?: number }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Tile = (props: any) => {
   const { x, y, width, height, symbol, name, pct, onPick, depth } = props;
   if (depth !== 1 || width <= 0 || height <= 0) return null;
@@ -102,7 +70,7 @@ const MarketMap = () => {
 
   useEffect(() => {
     const load = async () => {
-      const r = await fetchMultipleQuotesRacing(CONSTITUENTS.map((c) => c.symbol), 10000);
+      const r = await fetchMultipleQuotesRacing(MARKET_CONSTITUENTS.map((c) => c.symbol), 10000);
       setQuotes(r);
       setLoaded(true);
     };
@@ -112,7 +80,7 @@ const MarketMap = () => {
   }, []);
 
   const data: Node[] = useMemo(
-    () => CONSTITUENTS.map((c) => {
+    () => MARKET_CONSTITUENTS.map((c) => {
       const q = quotes.get(c.symbol);
       return { name: c.name, symbol: c.symbol, size: c.w, pct: q?.changePercent, price: q?.price };
     }),
