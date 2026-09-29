@@ -61,7 +61,7 @@ export const fetchIndexSnapshot = (key: IndexKey, force = false): Promise<IndexS
         for (const c of chunk) {
           const q = data[`${c.symbol}.NS`];
           // Only genuine live quotes; the edge function's static backups are excluded.
-          if (!q || q.source !== 'yahoo' || !(q.price > 0)) continue;
+          if (!q || q.source !== 'yahoo' || !(q.price > 0) || !Number.isFinite(q.changePercent)) continue;
           rows.push({
             symbol: c.symbol, name: c.name, industry: c.industry,
             price: q.price, change: q.change, changePercent: q.changePercent,

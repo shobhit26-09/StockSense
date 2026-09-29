@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import Sparkline from '@/components/Sparkline';
 import { fetchMultipleQuotesRacing, type StockQuote } from '@/services/multiSourceDataService';
 import { fetchHistory, type HistoryRange, type HistorySeries } from '@/services/historyService';
+import { correctIndexQuote } from '@/services/indexQuote';
 
 const sessionInfo = (d: Date) => {
   const day = d.getDay();
@@ -81,7 +82,9 @@ const MarketHero = () => {
   }, []);
 
   const s = sessionInfo(now);
-  const nifty = quotes.get(selected.symbol);
+  const currentQuote = quotes.get(selected.symbol);
+  const nifty = currentQuote && sparks[selected.symbol]?.source === 'yahoo'
+    ? correctIndexQuote(currentQuote, sparks[selected.symbol], now.getTime()) : currentQuote?.source === 'backup' ? currentQuote : undefined;
 
   const chart = useMemo(() => {
     if (!series) return null;
@@ -91,15 +94,13 @@ const MarketHero = () => {
       if (last && Math.abs(last.c - nifty.price) / nifty.price < 0.08) last.c = nifty.price;
     }
     const last = pts[pts.length - 1].c;
-    // Intraday baseline: prefer the live quote's previous close (Yahoo's
-    // intraday chartPreviousClose is stale for some BSE indices); sanity-check
-    // against the last traded price so a bad baseline can't skew the chart.
-    const sane = (v?: number) => typeof v === 'number' && Number.isFinite(v) && v > 0 && Math.abs(v - last) / last < 0.2;
-    const first = range === '1d'
-      ? (sane(nifty?.previousClose) ? (nifty!.previousClose as number) : sane(series.prevClose) ? (series.prevClose as number) : pts[0].c)
-      : pts[0].c;
+    // Do not fall back to Yahoo's stale intraday chartPreviousClose.
+    // Only the verified last completed daily candle can anchor 'today'.
+    const hasDayBaseline = range === '1d' && series.source === 'yahoo' && nifty?.source === 'yahoo' && Number.isFinite(nifty.previousClose) && nifty.previousClose > 0;
+    const first = hasDayBaseline ? nifty.previousClose : pts[0].c;
     const change = last - first;
-    return { pts, first, last, change, pct: (change / first) * 100, up: change >= 0 };
+    const pct = (change / first) * 100;
+    return { pts, first, last, change, pct, up: change >= 0, hasDayBaseline };
   }, [series, nifty, range]);
 
   const up = chart ? chart.up : (nifty?.changePercent ?? 0) >= 0;
@@ -163,7 +164,7 @@ const MarketHero = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <span key={selected.symbol} className="hero-swap text-[12px] font-semibold uppercase tracking-[0.14em] text-white/55">{selected.label}</span>
-                  {series?.source === 'sample' && (
+                  {(series?.source === 'sample' || nifty?.source === 'backup') && (
                     <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">Sample data · feed offline</span>
                   )}
                 </div>
@@ -171,16 +172,16 @@ const MarketHero = () => {
                   <span className="font-display text-[40px] font-semibold leading-none tracking-tight text-white tabular-nums">
                     {nifty ? fmt(nifty.price) : <span className="shimmer inline-block h-9 w-44 rounded-lg align-middle" />}
                   </span>
-                  {nifty && (
+                  {nifty && nifty.source === 'yahoo' && Number.isFinite(nifty.changePercent) && (
                     <span className={`inline-flex items-center gap-0.5 font-mono text-sm font-medium ${nifty.changePercent >= 0 ? 'text-success' : 'text-destructive'}`}>
                       {nifty.changePercent >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                       {nifty.change >= 0 ? '+' : ''}{fmt(nifty.change)} ({nifty.changePercent >= 0 ? '+' : ''}{nifty.changePercent.toFixed(2)}%)
                     </span>
                   )}
                 </div>
-                {chart && (
+                {chart && (range !== '1d' || (series?.source === 'yahoo' && chart.hasDayBaseline)) && (
                   <div className="mt-1 text-[12px] text-white/45">
-                    <span className={chart.up ? 'text-success' : 'text-destructive'}>{chart.pct >= 0 ? '+' : ''}{chart.pct.toFixed(2)}%</span> {range === '1d' ? 'today' : `over ${rangeLabel}`}
+                    <span className={chart.up ? 'text-success' : 'text-destructive'}>{chart.pct >= 0 ? '+' : ''}{chart.pct.toFixed(2)}%</span> {range === '1d' ? (chart.hasDayBaseline ? 'today' : 'since open') : `over ${rangeLabel}`}
                   </div>
                 )}
               </div>
@@ -236,7 +237,9 @@ const MarketHero = () => {
 
             <div className="mt-4 grid grid-cols-2 gap-2.5">
               {TILES.map((t) => {
-                const q = quotes.get(t.symbol);
+                const raw = quotes.get(t.symbol);
+                const q = raw && sparks[t.symbol]?.source === 'yahoo'
+                  ? correctIndexQuote(raw, sparks[t.symbol], now.getTime()) : raw?.source === 'backup' ? raw : undefined;
                 const sp = sparks[t.symbol];
                 const pos = (q?.changePercent ?? 0) >= 0;
                 const good = t.invert ? !pos : pos;
@@ -251,7 +254,7 @@ const MarketHero = () => {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.1em] text-white/45 sm:text-[10.5px]">{t.label}</span>
-                      {q && (
+                      {q && q.source === 'yahoo' && Number.isFinite(q.changePercent) && (
                         <span className={`font-mono text-[11px] ${good ? 'text-success' : 'text-destructive'}`}>
                           {pos ? '+' : ''}{q.changePercent.toFixed(2)}%
                         </span>

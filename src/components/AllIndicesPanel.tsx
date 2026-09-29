@@ -83,9 +83,9 @@ const AllIndicesPanel = () => {
         if (q && q.price) {
           next[sym] = {
             price: q.price,
-            change: q.change ?? 0,
-            changePercent: q.changePercent ?? 0,
-            previousClose: q.previousClose ?? 0,
+            change: q.change,
+            changePercent: q.changePercent,
+            previousClose: q.previousClose,
             high: q.high ?? 0,
             low: q.low ?? 0,
             open: q.open ?? q.previousClose ?? 0,
@@ -116,7 +116,7 @@ const AllIndicesPanel = () => {
     for (const idx of INDICES) {
       if (!idx.country) continue;
       const q = quotes[idx.symbol];
-      if (!q) continue;
+      if (!q || !Number.isFinite(q.changePercent)) continue;
       let b = buckets.get(idx.country);
       if (!b) {
         b = {
@@ -230,7 +230,7 @@ const AllIndicesPanel = () => {
                     {q ? fmt(q.price, dec) : '—'}
                   </td>
                   <td className={`py-4 pl-3 text-right font-mono tabular-nums whitespace-nowrap ${pos ? 'text-success' : 'text-destructive'}`}>
-                    {q ? (
+                    {q && Number.isFinite(q.changePercent) ? (
                       <>
                         {pos ? '+' : ''}{fmt(q.change, dec)}{' '}
                         <span className="block sm:inline opacity-80">({pos ? '+' : ''}{q.changePercent.toFixed(2)}%)</span>

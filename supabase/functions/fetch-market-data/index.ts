@@ -1,3 +1,4 @@
+import { resolvePreviousClose } from "./previous-close.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -13,20 +14,25 @@ const YAHOO_HEADERS = {
 
 // Fetch a single Yahoo Finance quote
 async function fetchYahooQuote(symbol: string): Promise<{
-  symbol: string; name: string; price: number; change: number;
-  changePercent: number; previousClose: number; volume: number;
+  symbol: string; name: string; price: number; change: number | null;
+  changePercent: number | null; previousClose: number | null; volume: number;
   high: number; low: number; open: number; source: string;
 } | null> {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+    // Five daily candles expose the last completed session. `chartPreviousClose`
+    // on a 1d/1d Yahoo chart is sometimes two trading sessions old.
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
     const res = await fetch(url, { headers: YAHOO_HEADERS });
     if (!res.ok) return null;
     const data = await res.json();
     const q = data?.chart?.result?.[0];
     if (!q?.meta?.regularMarketPrice) return null;
     const price = q.meta.regularMarketPrice;
-    const prev = q.meta.chartPreviousClose || q.meta.previousClose || price;
-    const change = price - prev;
+    const prev = resolvePreviousClose(q.timestamp ?? [], q?.indicators?.quote?.[0]?.close ?? [],
+      q.meta.regularMarketTime, q.meta.exchangeTimezoneName || 'Asia/Kolkata');
+    // Unknown baseline is safer than a confidently wrong one. Do not substitute
+    // chartPreviousClose or synthetic zero into a user-facing day change.
+    const change = prev === null ? null : price - prev;
     const opens = q?.indicators?.quote?.[0]?.open || [];
     const firstOpen = opens.find((x: any) => x != null);
     return {
@@ -34,7 +40,7 @@ async function fetchYahooQuote(symbol: string): Promise<{
       name: q.meta.shortName || q.meta.symbol || symbol,
       price,
       change,
-      changePercent: prev > 0 ? (change / prev) * 100 : 0,
+      changePercent: prev !== null ? (change! / prev) * 100 : null,
       previousClose: prev,
       volume: q.meta.regularMarketVolume || 0,
       high: q.meta.regularMarketDayHigh || price,
@@ -178,7 +184,7 @@ async function handleTopMovers() {
   const quotes = await Promise.all(
     TOP_MOVERS_SYMBOLS.map(async (s) => {
       const q = await fetchYahooQuote(s.symbol);
-      if (q && q.price > 0 && q.change !== 0) {
+      if (q && q.price > 0 && q.change !== null && q.change !== 0) {
         return { symbol: s.symbol.replace('.NS', ''), name: s.name, price: q.price, change: q.change, changePercent: q.changePercent, volume: q.volume, high: q.high, low: q.low };
       }
       return null;

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { fetchMultipleQuotesRacing } from '@/services/multiSourceDataService';
+import { fetchHistory } from '@/services/historyService';
+import { correctIndexQuote } from '@/services/indexQuote';
 
 interface TickerItem {
   symbol: string;
@@ -52,13 +54,19 @@ const PremiumStockTicker = () => {
     let alive = true;
     const load = async () => {
       try {
-        const results = await fetchMultipleQuotesRacing(allSymbols.map((s) => s.symbol), 6000);
+        const [results, daily] = await Promise.all([
+          fetchMultipleQuotesRacing(allSymbols.map((s) => s.symbol), 6000),
+          Promise.all(indices.map(async ({ symbol }) => [symbol, await fetchHistory(symbol, '1mo')] as const)),
+        ]);
+        const history = new Map(daily);
         if (!alive) return;
         setQuotes((prev) => {
           const next = { ...prev };
           results.forEach((q, symbol) => {
             const info = allSymbols.find((s) => s.symbol === symbol);
-            if (q && q.price > 0 && info) next[symbol] = { symbol, name: info.name, price: q.price, change: q.change, changePercent: q.changePercent };
+            const verified = symbol.startsWith('^') && history.get(symbol)?.source === 'yahoo'
+              ? correctIndexQuote(q, history.get(symbol)!) : symbol.startsWith('^') ? null : q;
+            if (verified && verified.price > 0 && Number.isFinite(verified.changePercent) && info) next[symbol] = { symbol, name: info.name, price: verified.price, change: verified.change, changePercent: verified.changePercent };
           });
           return next;
         });
