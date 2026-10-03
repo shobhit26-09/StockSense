@@ -1,83 +1,68 @@
-"""Builds public/data/fii-dii.json from official NSE sources (free, no key):
- - cash market FII/FPI and DII net: NSE fiidiiTradeReact (latest day only; history accumulates run by run)
- - FII derivatives (index futures/options, stock futures/options): NSE archives fii_stats_DD-Mon-YYYY.xls (dated, backfilled)
-No-op safe: network failures keep the existing file; nothing is rewritten unless data changed.
-Usage: python3 scripts/build-fii-dii.py   (needs pandas, xlrd)"""
-import json, os, sys, datetime as dt, urllib.request, urllib.error, http.cookiejar, io
-import pandas as pd
+"""Builds public/data/fii-dii.json: FII and DII cash-market net buy/(sell) with Nifty close, daily / monthly / yearly.
+Source: StockEdge's public API (api.stockedge.com), which compiles NSE/BSE provisional cash-market figures.
+NSE itself only publishes the latest day, so there is no official history to read. Daily rows are kept and extended
+run by run, so history grows beyond what the API returns. Monthly and yearly come straight from the API.
+No-op safe: any failure keeps the existing file; nothing is rewritten unless the data changed.
+Usage: python3 scripts/build-fii-dii.py   (stdlib only)"""
+import json, os, sys, datetime as dt, urllib.request
 
 OUT = "public/data/fii-dii.json"
-KEEP_DAYS = 120
+API = "https://api.stockedge.com/Api/FIIDashboardApi/GetFIIDIIProvisional?FiiDiiType=%s&TimeSpan=%s"
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
-jar = http.cookiejar.CookieJar()
-op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
-op.addheaders = [("User-Agent", UA), ("Referer", "https://www.nseindia.com/reports/fii-dii")]
+MON = {m: i + 1 for i, m in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split())}
 
-def iso(s): return dt.datetime.strptime(s, "%d-%b-%Y").date().isoformat()
+def get(who, span):
+    req = urllib.request.Request(API % (who, span), headers={"User-Agent": UA})
+    rows = json.load(urllib.request.urlopen(req, timeout=40))
+    if not isinstance(rows, list) or not rows: raise ValueError("empty response")
+    return rows
 
-def fetch_cash():
-    try:
-        try: op.open("https://www.nseindia.com/", timeout=20).read()
-        except Exception: pass
-        rows = json.load(op.open("https://www.nseindia.com/api/fiidiiTradeReact", timeout=20))
-        out = {"d": iso(rows[0]["date"])}
-        for r in rows:
-            k = "fii" if r["category"].upper().startswith("FII") else "dii" if r["category"].upper().startswith("DII") else None
-            if k:
-                out[k + "Cash"] = round(float(r["netValue"]), 2)
-                out[k + "CashBuy"] = round(float(r["buyValue"]), 2)
-                out[k + "CashSell"] = round(float(r["sellValue"]), 2)
-        return out if "fiiCash" in out and "diiCash" in out else None
-    except Exception as e:
-        print("cash fetch failed:", e); return None
+def row(r, label):
+    n = r.get("NiftyCZG")
+    return {"l": label, "v": round(float(r["NetValue"]), 2), "n": r.get("NiftyC"), "c": None if n is None else round(float(n), 2)}
 
-def fetch_deriv(day):
-    """Returns (dict|None, status) where status is 'ok', 'missing' (404: holiday/not yet published) or 'error'."""
-    url = f"https://nsearchives.nseindia.com/content/fo/fii_stats_{day.strftime('%d-%b-%Y')}.xls"
-    try:
-        raw = op.open(url, timeout=25).read()
-    except urllib.error.HTTPError as e:
-        return None, ("missing" if e.code in (403, 404) else "error")
-    except Exception:
-        return None, "error"
-    try:
-        df = pd.read_excel(io.BytesIO(raw), header=None)
-        lab = df[0].astype(str).str.strip().str.upper()
-        def net(name):
-            r = df[lab == name].iloc[0]
-            return round(float(r[2]) - float(r[4]), 2)  # buy amt - sell amt, Rs crore
-        return {"d": day.isoformat(), "idxFut": net("INDEX FUTURES"), "idxOpt": net("INDEX OPTIONS"),
-                "stkFut": net("STOCK FUTURES"), "stkOpt": net("STOCK OPTIONS")}, "ok"
-    except Exception as e:
-        print("parse failed", day, e); return None, "error"
+def daily_dates(rows, today):
+    """API gives 'Oct 1' without a year, newest first. Walk back and step the year when the month jumps up."""
+    out, year, last_m = [], today.year, None
+    for r in rows:
+        m, d = r["DateText"].split()
+        m = MON[m]
+        if last_m is not None and m > last_m: year -= 1
+        last_m = m
+        out.append(dt.date(year, m, int(d)).isoformat())
+    return out
 
-prev = {"days": [], "noData": []}
+prev = {}
 if os.path.exists(OUT):
     try: prev = json.load(open(OUT))
     except Exception: pass
-days = {r["d"]: r for r in prev.get("days", [])}
-nodata = set(prev.get("noData", []))
 today = dt.date.today()
+try:
+    new = {}
+    for who in ("fii", "dii"):
+        d = get(who, "D")
+        dates = daily_dates(d, today)
+        old = {r["l"]: r for r in prev.get(who, {}).get("daily", [])}
+        for k, r in zip(dates, d): old[k] = row(r, k)
+        new[who] = {
+            "daily": [old[k] for k in sorted(old, reverse=True)],
+            "monthly": [row(r, r["DateText"]) for r in get(who, "M")],
+            "yearly": [row(r, r["DateText"]) for r in get(who, "Y")],
+        }
+except Exception as e:
+    print("fetch failed, keeping existing file:", e); sys.exit(0)
 
-c = fetch_cash()
-if c: days.setdefault(c["d"], {"d": c["d"]}).update(c)
+# Daily change % is only supplied for the days the API returns; recompute for older stored rows from Nifty closes.
+for who in new:
+    rows = new[who]["daily"]
+    for i, r in enumerate(rows[:-1]):
+        if r["c"] is None and r["n"] and rows[i + 1]["n"]:
+            r["c"] = round((r["n"] / rows[i + 1]["n"] - 1) * 100, 2)
 
-for i in range(0, 75):
-    d = today - dt.timedelta(days=i)
-    if d.weekday() >= 5 or (today - d).days > KEEP_DAYS: continue
-    k = d.isoformat()
-    if "idxFut" in days.get(k, {}): continue
-    if k in nodata and i > 2: continue  # settled holidays are not retried; the last 3 days are (late publication)
-    r, st = fetch_deriv(d)
-    if st == "ok": days.setdefault(k, {"d": k}).update(r); nodata.discard(k)
-    elif st == "missing": nodata.add(k)
-
-cut = (today - dt.timedelta(days=KEEP_DAYS)).isoformat()
-rows = [days[k] for k in sorted(days) if k >= cut]
-out = {"source": "NSE (fiidiiTradeReact for cash; archives fii_stats for derivatives)", "unit": "Rs crore, net buy/(sell)",
-       "days": rows, "noData": sorted(k for k in nodata if k >= cut)}
-if out["days"] == prev.get("days") and out["noData"] == prev.get("noData"):
+out = {"source": "StockEdge public API, compiled from NSE/BSE provisional cash-market data",
+       "unit": "Rs crore, net buy/(sell)", **new}
+if all(out.get(k) == prev.get(k) for k in ("fii", "dii")):
     print("No change."); sys.exit(0)
 out["updatedAt"] = dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ")
 json.dump(out, open(OUT, "w"), separators=(",", ":"))
-print("days", len(rows), "latest", rows[-1] if rows else None)
+print("daily", len(new["fii"]["daily"]), "latest", new["fii"]["daily"][0])
