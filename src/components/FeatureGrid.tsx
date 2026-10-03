@@ -6,7 +6,7 @@ const features = [
   { to: '/heatmap', img: '/showcase/heatmap.webp', eyebrow: 'Breadth',      title: 'Index heatmap',     desc: 'Sector and index breadth across NIFTY at a glance.' },
   { to: '/agent',   img: '/showcase/agent.webp',   eyebrow: 'Intelligence', title: 'Trade agent',       desc: 'A momentum scanner over live quotes, FII/DII flow and ATR risk.' },
   { to: '/sectors', img: '/showcase/sectors.webp', eyebrow: 'Allocation',   title: 'Sector ideas',      desc: 'Sector calls scored on macro drivers, policy news and flows.' },
-  { to: '/fii-dii', img: '/showcase/2-fii-dii.webp', eyebrow: 'Institutions', title: 'FII / DII flows',   desc: 'Daily FII and DII net buying and selling, with history.' },
+  { to: '/fii-dii', img: '/showcase/1-fiisimple.webp', eyebrow: 'Institutions', title: 'FII / DII flows',   desc: 'Daily FII and DII net buying and selling, with history.' },
   { to: '/news',    img: '/showcase/news.webp',    eyebrow: 'Tape',         title: 'News & bulk deals', desc: 'Headlines and institutional block prints as they land.' },
 ];
 
