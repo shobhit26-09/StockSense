@@ -1,12 +1,13 @@
-name: Refresh sector data
+name: Refresh sector and FII/DII data
 
-# Runs on weekdays after the NSE close (17:30 and 20:30 IST) to catch the day's bhavcopy.
+# Runs on weekdays after the NSE close (17:30, 20:30 and 22:30 IST) to catch the day's bhavcopy and NSE FII/DII prints.
 # On NSE holidays, or when the dataset has no new trading day yet, the script exits
 # without changes and nothing is committed. Free on public repos (standard runners).
 on:
   schedule:
     - cron: '0 12 * * 1-5'
     - cron: '0 15 * * 1-5'
+    - cron: '0 17 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -27,17 +28,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install duckdb pandas numpy
+      - run: pip install duckdb pandas numpy xlrd
       - name: Build sector data
         run: python3 scripts/build-sector-data.py
+      - name: Build FII/DII data
+        run: python3 scripts/build-fii-dii.py
       - name: Commit if changed
         run: |
-          if git diff --quiet -- public/data/sectors.json; then
+          if git diff --quiet -- public/data; then
             echo "No change."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data/sectors.json
-          git commit -m "Refresh sector data"
+          git add public/data
+          git commit -m "Refresh sector and FII/DII data"
           git push
