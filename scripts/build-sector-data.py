@@ -3,8 +3,27 @@ proxy from free NSE bhavcopy data (tejhq/indian-markets on Hugging Face).
 Usage: python3 scripts/build-sector-data.py [--force]; no-op if the data has no newer trading day.   (needs duckdb, pandas, numpy)
 Flow is price x volume pressure (turnover on up days minus down days). It is NOT FII/DII data."""
 import json, math, datetime as dt
-import os, sys
+import os, sys, urllib.request, http.cookiejar
 import duckdb, numpy as np, pandas as pd
+
+def fetch_fii_dii():
+    """Official NSE cash-market FII/FPI and DII net (Rs crore), market-wide. None on any failure."""
+    try:
+        ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+        op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+        op.addheaders = [("User-Agent", ua), ("Accept", "application/json"), ("Referer", "https://www.nseindia.com/reports/fii-dii")]
+        try: op.open("https://www.nseindia.com/", timeout=20).read()
+        except Exception: pass  # homepage may 403; the cookie jar is still seeded
+        rows = json.load(op.open("https://www.nseindia.com/api/fiidiiTradeReact", timeout=20))
+        out = {"date": rows[0]["date"], "source": "NSE"}
+        for r in rows:
+            net = round(float(r["netValue"]))
+            if r["category"].upper().startswith("FII"): out["fii"] = net
+            elif r["category"].upper().startswith("DII"): out["dii"] = net
+        return out if "fii" in out and "dii" in out else None
+    except Exception as e:
+        print("FII/DII fetch failed:", e)
+        return None
 
 URL = "https://huggingface.co/datasets/tejhq/indian-markets/resolve/main/prices_adjusted/nse_2026.parquet"
 uni = json.load(open("src/data/nseUniverse.json"))["u"]
@@ -28,13 +47,20 @@ liquid = (t20.iloc[-1] > 2e7) & close.iloc[-22:].notna().all()
 syms = [s for s in close.columns if liquid.get(s, False)]
 print("asof", asof.date(), "liquid stocks", len(syms), "sessions", len(dates))
 OUT = "public/data/sectors.json"
-if os.path.exists(OUT) and "--force" not in sys.argv:
-    try:
-        if json.load(open(OUT)).get("asOf") == str(asof.date()):
-            print("No new trading day in the dataset; leaving", OUT, "unchanged.")
-            sys.exit(0)
-    except Exception:
-        pass
+fii = fetch_fii_dii()
+prev = {}
+if os.path.exists(OUT):
+    try: prev = json.load(open(OUT))
+    except Exception: prev = {}
+fii = fii or prev.get("fiiDii")  # keep the last good figure if NSE is unreachable
+if "--force" not in sys.argv and prev.get("asOf") == str(asof.date()):
+    if fii and fii != prev.get("fiiDii"):
+        prev["fiiDii"] = fii
+        json.dump(prev, open(OUT, "w"), separators=(",", ":"))
+        print("Updated FII/DII only:", fii)
+    else:
+        print("No new trading day in the dataset; leaving", OUT, "unchanged.")
+    sys.exit(0)
 
 def basket(cols):
     w = t20.shift(1)[cols]
@@ -83,6 +109,6 @@ mk = {"chg": {k: round(chg(mkt, n), 2) for k, n in [("1d", 1), ("1w", 5), ("1m",
       "spark": [round(float(x), 2) for x in (mkt / mkt.iloc[-61]).iloc[-60:] * 100]}
 json.dump({"asOf": str(asof.date()), "generatedAt": dt.datetime.utcnow().isoformat() + "Z",
            "source": "NSE bhavcopy via tejhq/indian-markets; sectors per niftyindices.com lists",
-           "universe": len(syms), "market": mk, "sectors": out}, open(OUT, "w"), separators=(",", ":"))
+           "universe": len(syms), "fiiDii": fii, "market": mk, "sectors": out}, open(OUT, "w"), separators=(",", ":"))
 for s in sorted(out, key=lambda x: -x["flow"]["pressure"]):
     print(f'{s["sector"][:34]:34} n={s["stocks"]:3} 1m={s["chg"]["1m"]:6} 3m={s["chg"]["3m"]:6} rs3m={s["rs"]["3m"]:6} press={s["flow"]["pressure"]:6} net={s["flow"]["net10"]:8} tt={s["flow"]["turnTrend"]}')
