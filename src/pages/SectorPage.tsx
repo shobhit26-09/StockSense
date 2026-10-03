@@ -1,13 +1,14 @@
 import PageShell from '@/components/PageShell';
-import SectorIdeas from '@/components/SectorIdeas';
+import SectorBoard from '@/components/SectorBoard';
 
 const SectorPage = () => (
   <PageShell
-    eyebrow="Allocation"
-    title="Sector investment ideas"
-    sub="An algorithmic read on which sectors are set up to lead or lag — scored on relative momentum, macro drivers, government policy and news flow, and institutional positioning."
+    eyebrow="Sectors"
+    title="Sector flows and performance"
+    sub="Which sectors are attracting money, which are losing it, and who is leading, ranked from real NSE closing data."
+    seoTitle="Sector flows and performance - NSE sectors | StockSense"
   >
-    <SectorIdeas />
+    <SectorBoard />
   </PageShell>
 );
 
