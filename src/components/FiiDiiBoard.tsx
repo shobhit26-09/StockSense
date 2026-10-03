@@ -13,10 +13,8 @@ const SPANS: { key: Span; label: string; head: string; first: number }[] = [
 ];
 
 const num = (v: number) => Math.abs(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const label = (l: string, span: Span) => {
-  if (span !== 'daily') return l;
-  return new Date(l + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-};
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const label = (l: string, span: Span) => (span !== 'daily' ? l : `${+l.slice(8, 10)} ${MON[+l.slice(5, 7) - 1]}`);
 
 const Seg = ({ items, value, onChange, name }: { items: { key: string; label: string }[]; value: string; onChange: (k: string) => void; name: string }) => (
   <div role="tablist" aria-label={name} className="inline-flex rounded-full border border-border bg-card p-0.5">
