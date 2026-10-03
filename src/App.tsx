@@ -15,9 +15,9 @@ const Index = lazy(() => import('./pages/Index'));
 const StockAnalysis = lazy(() => import('./pages/StockAnalysis'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AgentPage = lazy(() => import('./pages/AgentPage'));
+const FiiDiiPage = lazy(() => import('./pages/FiiDiiPage'));
 const SectorPage = lazy(() => import('./pages/SectorPage'));
 const HeatmapPage = lazy(() => import('./pages/HeatmapPage'));
-const MoversPage = lazy(() => import('./pages/MoversPage'));
 const MacroPage = lazy(() => import('./pages/MacroPage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -51,7 +51,8 @@ const App = () => (
               <Route path="/agent" element={<AgentPage />} />
               <Route path="/sectors" element={<SectorPage />} />
               <Route path="/heatmap" element={<HeatmapPage />} />
-              <Route path="/movers" element={<MoversPage />} />
+              <Route path="/fii-dii" element={<FiiDiiPage />} />
+              <Route path="/movers" element={<Navigate to="/fii-dii" replace />} />
               <Route path="/macro" element={<MacroPage />} />
               <Route path="/news" element={<NewsPage />} />
               <Route path="/auth" element={<AuthPage />} />
