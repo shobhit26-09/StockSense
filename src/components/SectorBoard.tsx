@@ -13,6 +13,7 @@ interface SectorRow {
 }
 interface Payload {
   asOf: string; universe: number; source: string;
+  fiiDii?: { date: string; fii: number; dii: number } | null;
   market: { chg: Record<Frame, number>; spark: number[] };
   sectors: SectorRow[];
 }
@@ -178,6 +179,25 @@ const SectorBoard = () => {
         <span>Closing data as of <span className="font-medium text-foreground">{asOf}</span> &middot; {data.universe} NSE stocks in {data.sectors.length} sectors</span>
         <span>Broad market 1M <span className={`font-mono ${tone(data.market.chg['1m'])}`}>{pct(data.market.chg['1m'])}</span></span>
       </div>
+
+      {data.fiiDii && (
+        <div className="premium-card flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Institutional flow &middot; whole market</div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">NSE cash segment, {data.fiiDii.date.replace(/-/g, ' ')}. Not split by sector.</div>
+          </div>
+          <div className="ml-auto flex items-center gap-6">
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">FII / FPI net</div>
+              <div className={`font-mono text-base font-medium ${tone(data.fiiDii.fii)}`}>{cr(data.fiiDii.fii)}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">DII net</div>
+              <div className={`font-mono text-base font-medium ${tone(data.fiiDii.dii)}`}>{cr(data.fiiDii.dii)}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border lg:grid-cols-4">
         <Stat k="Money flow" v={`${view.nIn} in \u00B7 ${view.nOut} out`} sub="sectors, last 10 sessions" />
