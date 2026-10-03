@@ -5,7 +5,7 @@ const FiiDiiPage = () => (
   <PageShell
     eyebrow="Institutions"
     title="FII and DII activity"
-    sub="What foreign and domestic institutions bought and sold, day by day, in cash, futures and options. Official NSE data."
+    sub="Net buying and selling by foreign (FII) and domestic (DII) institutions in the cash market, against the Nifty."
     seoTitle="FII DII data today - daily net buy and sell | StockSense"
   >
     <FiiDiiBoard />
