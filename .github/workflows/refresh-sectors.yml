@@ -1,6 +1,6 @@
 name: Refresh sector and FII/DII data
 
-# Runs on weekdays after the NSE close (17:30, 20:30 and 22:30 IST) to catch the day's bhavcopy and NSE FII/DII prints.
+# Runs on weekdays after the NSE close (17:30, 20:30 and 22:30 IST) to refresh sector data and FII/DII history.
 # On NSE holidays, or when the dataset has no new trading day yet, the script exits
 # without changes and nothing is committed. Free on public repos (standard runners).
 on:
