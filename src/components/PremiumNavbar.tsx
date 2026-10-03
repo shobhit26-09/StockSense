@@ -16,7 +16,7 @@ import StockSenseMark from './StockSenseMark';
 
 const NAV_LINKS = [
   { to: '/', label: 'Dashboard' },
-  { to: '/movers', label: 'Movers' },
+  { to: '/fii-dii', label: 'FII / DII' },
   { to: '/sectors', label: 'Sectors' },
   { to: '/heatmap', label: 'Heatmap' },
   { to: '/macro', label: 'Macro' },
