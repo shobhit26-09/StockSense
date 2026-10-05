@@ -37,6 +37,16 @@ const INDICES = [
 
 const fmt = (n: number, d = 2) => n.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
 
+/** Fixed NSE/BSE session in epoch milliseconds, anchored to the displayed day.
+ * Use IST explicitly so the chart is identical in every viewer's timezone.
+ * A stale/closed-day feed keeps its own session, rather than shifting to today.
+ */
+export const intradaySessionDomain = (timestamp: number): [number, number] => {
+  const istOffset = 330 * 60_000;
+  const dayStart = Math.floor((timestamp + istOffset) / 86_400_000) * 86_400_000 - istOffset;
+  return [dayStart + 555 * 60_000, dayStart + 930 * 60_000];
+};
+
 const MarketHero = () => {
   const [now, setNow] = useState(new Date());
   const [quotes, setQuotes] = useState<Map<string, StockQuote>>(new Map());
@@ -100,7 +110,8 @@ const MarketHero = () => {
     const first = hasDayBaseline ? nifty.previousClose : pts[0].c;
     const change = last - first;
     const pct = (change / first) * 100;
-    return { pts, first, last, change, pct, up: change >= 0, hasDayBaseline };
+    const sessionDomain = range === '1d' ? intradaySessionDomain(pts[pts.length - 1].t) : undefined;
+    return { pts, first, last, change, pct, up: change >= 0, hasDayBaseline, sessionDomain };
   }, [series, nifty, range]);
 
   const up = chart ? chart.up : (nifty?.changePercent ?? 0) >= 0;
@@ -209,7 +220,15 @@ const MarketHero = () => {
                         <stop offset="100%" stopColor={color} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="t" hide />
+                    {/* Intraday uses elapsed time, not equally-spaced categories. The
+                        untraded part of 09:15-15:30 stays empty, including the fill. */}
+                    <XAxis
+                      dataKey="t"
+                      type={range === '1d' ? 'number' : 'category'}
+                      domain={chart.sessionDomain}
+                      allowDataOverflow={range === '1d'}
+                      hide
+                    />
                     <YAxis domain={[(dataMin: number) => Math.min(dataMin, chart.first), (dataMax: number) => Math.max(dataMax, chart.first)]} hide />
                     <ReferenceLine y={chart.first} stroke="rgba(255,255,255,0.22)" strokeDasharray="3 4" />
                     <Tooltip
@@ -220,7 +239,7 @@ const MarketHero = () => {
                             <div className="font-mono text-[13px] text-white">{fmt(payload[0].value as number)}</div>
                             <div className="text-[11px] text-white/50">
                               {range === '1d'
-                                ? new Date(payload[0].payload.t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
+                                ? new Date(payload[0].payload.t).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false })
                                 : new Date(payload[0].payload.t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </div>
                           </div>
