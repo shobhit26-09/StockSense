@@ -89,6 +89,7 @@ const StockAnalysis = () => {
       <Seo
         title={`${companyName} (${plainSymbol}) share price & analysis — StockSense`}
         description={`Live price, chart, fundamentals and technical analysis for ${companyName} (${plainSymbol}) on NSE.`}
+        path={`/stock/${encodeURIComponent(plainSymbol)}.NS`}
       />
       <div className="fixed top-0 left-0 right-0 z-50">
         <PremiumNavbar />
