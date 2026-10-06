@@ -12,7 +12,7 @@ const template = readFileSync(resolve(distDir, "index.html"), "utf8")
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 
-const nav = SEO_ROUTES.filter((r) => r.path !== "/privacy")
+const nav = SEO_ROUTES.filter((r) => !["/privacy", "/terms", "/contact"].includes(r.path))
   .map((r) => `<a style="color:#a1a1aa" href="${r.path}">${esc(r.h1)}</a>`)
   .join("\n          ")
 
@@ -25,6 +25,7 @@ function body(route: SeoRoute) {
         <nav style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:0.5rem 1.25rem;justify-content:center;font-size:0.85rem">
           ${nav}
         </nav>
+        <p style="margin-top:1.5rem;color:#a1a1aa;font-size:0.75rem"><a style="color:#a1a1aa" href="/about">About</a> · <a style="color:#a1a1aa" href="/privacy">Privacy</a> · <a style="color:#a1a1aa" href="/terms">Terms</a> · <a style="color:#a1a1aa" href="/contact">Contact</a></p>
       </div>
     </div>
     <noscript>
