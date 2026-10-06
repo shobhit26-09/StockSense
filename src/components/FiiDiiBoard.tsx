@@ -96,7 +96,7 @@ const FiiDiiBoard = () => {
       </div>
 
       <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-        Cash-market net buy/(sell), {'\u20B9'} crore. Figures are provisional. History is compiled from NSE/BSE data via StockEdge{'\u2019'}s public feed, because NSE publishes only the latest day. Updated each trading evening.
+        Cash-market net buy/(sell), {'\u20B9'} crore. Figures are provisional. History is compiled from NSE/BSE data via StockEdge{'\u2019'}s public feed, because NSE publishes only the latest day. Updated each trading evening.{data.updatedAt && <> Last updated {new Date(data.updatedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} IST.</>}
       </p>
     </section>
   );
