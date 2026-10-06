@@ -11,6 +11,7 @@ import PremiumLoader from '@/components/PremiumLoader';
 import AnalyticsConsent from '@/components/AnalyticsConsent';
 import AnalyticsPageView from '@/components/AnalyticsPageView';
 import RouteSeo from '@/components/RouteSeo';
+import SiteFooter from '@/components/SiteFooter';
 
 const Index = lazy(() => import('./pages/Index'));
 const StockAnalysis = lazy(() => import('./pages/StockAnalysis'));
@@ -24,6 +25,9 @@ const NewsPage = lazy(() => import('./pages/NewsPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,10 +64,14 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route path="/market" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          <SiteFooter />
         </BrowserRouter>
       </TooltipProvider>
       </AuthProvider>
