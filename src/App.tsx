@@ -10,6 +10,7 @@ import RequireAuth from '@/components/RequireAuth';
 import PremiumLoader from '@/components/PremiumLoader';
 import AnalyticsConsent from '@/components/AnalyticsConsent';
 import AnalyticsPageView from '@/components/AnalyticsPageView';
+import RouteSeo from '@/components/RouteSeo';
 
 const Index = lazy(() => import('./pages/Index'));
 const StockAnalysis = lazy(() => import('./pages/StockAnalysis'));
@@ -44,6 +45,7 @@ const App = () => (
         <BrowserRouter>
           <AnalyticsConsent />
           <AnalyticsPageView />
+          <RouteSeo />
           <Suspense fallback={<PremiumLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
