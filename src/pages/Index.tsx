@@ -4,7 +4,6 @@ import MarketHero from '@/components/MarketHero';
 import FeatureGrid from '@/components/FeatureGrid';
 import MarketMap from '@/components/MarketMap';
 import MarketSentiment from '@/components/MarketSentiment';
-import StockSenseMark from '@/components/StockSenseMark';
 import PremiumTopMovers from '@/components/PremiumTopMovers';
 import PremiumNewsFeed from '@/components/PremiumNewsFeed';
 import { Link } from 'react-router-dom';
@@ -65,49 +64,6 @@ const Index = () => (
         </section>
 
         <FaqSection />
-
-        <footer className="mt-20 border-t border-border pt-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
-            <div>
-              <div className="flex items-center gap-2.5">
-                <StockSenseMark className="h-7 w-7" />
-                <span className="font-display text-sm font-bold tracking-tight">StockSense</span>
-              </div>
-              <p className="mt-4 text-sm text-muted-foreground max-w-xs leading-relaxed">
-                A focused decision terminal for Indian markets—live context, transparent signals,
-                and fewer distractions.
-              </p>
-            </div>
-            <div>
-              <div className="section-eyebrow mb-3">Data</div>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>NSE · BSE · Indices</li>
-                <li>Sector outlook · Macro drivers</li>
-                <li>Breadth · FII/DII flows</li>
-                <li>Bulk &amp; block deals</li>
-              </ul>
-            </div>
-            <div>
-              <div className="section-eyebrow mb-3">Platform</div>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Live multi-source quotes</li>
-                <li>Deterministic signal engine</li>
-                <li>Resilient edge delivery</li>
-                <li>60-second market refresh</li>
-              </ul>
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-t border-border py-6 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-4">
-              <span>© {new Date().getFullYear()} StockSense — educational use, not financial advice.</span>
-              <Link to="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-success live-indicator" />
-              Live · Yahoo Finance
-            </span>
-          </div>
-        </footer>
       </div>
     </main>
   </div>
