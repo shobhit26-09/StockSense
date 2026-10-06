@@ -5,9 +5,9 @@ name: Refresh sector and FII/DII data
 # without changes and nothing is committed. Free on public repos (standard runners).
 on:
   schedule:
-    - cron: '0 12 * * 1-5'
-    - cron: '0 15 * * 1-5'
-    - cron: '0 17 * * 1-5'
+    - cron: '17 12 * * 1-5'
+    - cron: '47 15 * * 1-5'
+    - cron: '17 17 * * 1-5'
   workflow_dispatch:
 
 permissions:
