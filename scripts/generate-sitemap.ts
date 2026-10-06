@@ -2,6 +2,7 @@
 
 import { writeFileSync } from "fs"
 import { resolve } from "path"
+import { ALL_SEO_ROUTES } from "../src/config/seoRoutes"
 
 const BASE_URL = "https://stocksensee.netlify.app"
 const LASTMOD = new Date().toISOString().slice(0, 10)
@@ -12,16 +13,11 @@ interface SitemapEntry {
   priority?: string
 }
 
-const entries: SitemapEntry[] = [
-  { path: "/", changefreq: "daily", priority: "1.0" },
-  { path: "/agent", changefreq: "daily", priority: "0.9" },
-  { path: "/sectors", changefreq: "daily", priority: "0.8" },
-  { path: "/heatmap", changefreq: "daily", priority: "0.8" },
-  { path: "/fii-dii", changefreq: "daily", priority: "0.8" },
-  { path: "/macro", changefreq: "daily", priority: "0.7" },
-  { path: "/news", changefreq: "hourly", priority: "0.7" },
-  { path: "/privacy", changefreq: "monthly", priority: "0.3" },
-]
+const entries: SitemapEntry[] = ALL_SEO_ROUTES.map((r) => ({
+  path: r.path,
+  changefreq: r.changefreq,
+  priority: r.priority,
+}))
 
 function generateSitemap(list: SitemapEntry[]) {
   const urls = list.map((e) =>
