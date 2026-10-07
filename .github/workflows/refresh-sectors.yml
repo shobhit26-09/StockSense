@@ -1,13 +1,13 @@
 name: Refresh sector and FII/DII data
 
-# Runs on weekdays after the NSE close (17:30, 20:30 and 22:30 IST) to refresh sector data and FII/DII history.
+# Runs on weekdays after the NSE close (17:49, 21:19 and 22:49 IST) to refresh sector data and FII/DII history.
 # On NSE holidays, or when the dataset has no new trading day yet, the script exits
 # without changes and nothing is committed. Free on public repos (standard runners).
 on:
   schedule:
-    - cron: '17 12 * * 1-5'
-    - cron: '47 15 * * 1-5'
-    - cron: '17 17 * * 1-5'
+    - cron: '19 12 * * 1-5'
+    - cron: '49 15 * * 1-5'
+    - cron: '19 17 * * 1-5'
   workflow_dispatch:
 
 permissions:
