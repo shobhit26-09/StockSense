@@ -142,7 +142,7 @@ const LEX: [RegExp, number][] = [
   [/\b(crash(?:es|ed)?|plunges?|plummets?|tanks?|collapses?|meltdown|bloodbath|rout)\b/, -3], [/\b(sell-?off|slumps?|tumbles?|sinks?|slides?|nosedives?|panic)\b/, -2.5],
   [/\b(falls?|fell|drops?|declines?|slips?|dips?|weakens?|retreats?|loses?|losses)\b/, -1.5],
   [/\b(misses?|downgrades?|underperform\w*|sell rating|profit (?:falls?|slumps?|drops?)|weak (?:results?|earnings|demand)|outflows?|net sellers?|selling|dumps?|offloads?)\b/, -1.5],
-  [/\b(rate hikes?|hikes? (?:repo|rates?)|tariffs?|sanctions?|war|conflict|escalat\w+|inflation (?:rises?|jumps?|spikes?)|recession|default|fraud|probe|penalty|ban)\b/, -2], [/\b(bearish|worr(?:y|ies|ied)|fears?|concerns?|uncertain\w*|volatil\w+|risk-?off|pressure|headwinds?)\b/, -1],
+  [/\b(rate hikes?|higher (?:interest )?rates|hikes? (?:repo|rates?)|tariffs?|sanctions?|war|conflict|escalat\w+|inflation (?:rises?|jumps?|spikes?)|recession|default|fraud|probe|penalty|ban)\b/, -2], [/\b(bearish|worr(?:y|ies|ied)|fears?|concerns?|uncertain\w*|volatil\w+|risk-?off|pressure|headwinds?)\b/, -1],
 ];
 const NEG = /\b(no|not|never|without|fails? to|unlikely to|ends?|snaps?|halts?|stops?)\b(?:\W+\w+){0,2}?\W+$/;
 export const scoreHeadline = (title: string): { score: number; matched: string[] } => {
@@ -164,13 +164,33 @@ export const scoreHeadline = (title: string): { score: number; matched: string[]
   return { score: clamp(total, -4, 4) / 4, matched };
 };
 
+/** Relevance is separate from tone: a company rally is not a market rally.
+ * Check the headline, never the RSS description (often padded with market keywords).
+ * Conservative allow-list: unclear stories stay in News, but do not move this gauge.
+ */
+export const isMarketWideHeadline = (title: string): boolean => {
+  const text = title.toLowerCase().replace(/[’']/g, "'").replace(/^(?:taking stock|mid-day mood|global markets?)\s*[:|]\s*/, '');
+  const companyStory = /\b(ipo|ipos|gmp|grey market|listing|lists|debut|q[1-4]|quarterly|earnings|results|dividend|buyback|stock split|bonus shares|price target|target price|buy rating|sell rating|upgrade|downgrade|order win|order book|stake sale|merger|acquisition)\b/;
+  if (/\b(ipo|ipos|gmp|grey market|listing|lists|debut)\b/.test(text)) return false;
+  // A named stock remains a company story even when its explanation mentions RBI,
+  // crude or a broad sell-off. Aggregate equity/index subjects are the exception.
+  const aggregate = /\b(nifty|sensex|indices|indexes|s&p\s*500|nasdaq|dow jones|nikkei|hang seng|ftse|dax|stoxx|wall street|dalal street|india vix|(?:india|indian|us|u\.s\.)\s+bonds?|(?:global|world|asian|asia|european|europe|us|u\.s\.|indian|india|domestic|emerging|equity|stock|share|financial|broader)\s+(?:stock\s+|equity\s+)?markets?|(?:global|asian|european|us|indian|domestic|emerging|china|chinese|japan|japanese|hong kong)\s+(?:stocks|equities|shares)|stocks? market|market breadth)\b/;
+  const firstClause = text.split(/\b(?:as|amid|after|despite|ahead of|on fears of)\b|[;:]/)[0];
+  const namedStock = /\b(?:stock|share)\s+(?:price|prices|rallies|rally|surges?|jumps?|falls?|drops?|slips?|dips?|crash\w*|plunges?|tumbles?|gains?|loses?)\b|\bshares\s+(?:of|in)\b|\b(?:itc|paytm|senco(?: gold)?)\b/;
+  if (namedStock.test(firstClause) && !aggregate.test(firstClause)) return false;
+  if (aggregate.test(firstClause) || /\bmarket\s+(?:rall(?:y|ies)|fails?|falls?|surges?|crash\w*|sell-?off|gains?|slips?|jumps?|rebounds?)\b/.test(firstClause)) return true;
+  if (companyStory.test(text)) return false;
+  const macro = /\b(rbi|reserve bank of india|repo rate|monetary policy|interest rates?|rate cuts?|rate hikes?|fed|federal reserve|fomc|ecb|boj|central banks?|fii|fiis|dii|diis|fpi|fpis|foreign (?:investors?|inflows?|outflows?)|institutional (?:flows?|buying|selling)|crude|brent|wti|oil prices?|rupee|usd\/?inr|dollar index|inflation|cpi|wpi|gdp|fiscal deficit|union budget|bond yields?|treasury yields?|geopolit\w*|war|ceasefire|sanctions?|tariffs?|trade (?:war|deal)|global sell-?off|global recession)\b/;
+  return macro.test(firstClause);
+};
+
 export interface NewsInput { articles: SentimentHeadline[]; now?: number }
 export const newsSignal = ({ articles, now = Date.now() }: NewsInput): { signal: SignalResult | null; headlines: HeadlineSignal[] } => {
   const unique = new Set<string>();
   const headlines: HeadlineSignal[] = [];
   for (const a of articles) {
     const age = now - Date.parse(a.publishedAt);
-    if (!a.title || !/^https:\/\//.test(a.url) || a.dataMode !== 'live' || !Number.isFinite(age) || age < -10 * 60_000 || age > 48 * 3_600_000) continue;
+    if (!a.title || !isMarketWideHeadline(a.title) || !/^https:\/\//.test(a.url) || a.dataMode !== 'live' || !Number.isFinite(age) || age < -10 * 60_000 || age > 48 * 3_600_000) continue;
     const key = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 70);
     if (unique.has(key)) continue;
     unique.add(key);
@@ -187,7 +207,7 @@ export const newsSignal = ({ articles, now = Date.now() }: NewsInput): { signal:
   const shrunk = mean * (scored.length / (scored.length + 3)); // few headlines pull toward neutral
   const pos = used.filter(h => h.tone === 'positive').length, neg = used.filter(h => h.tone === 'negative').length;
   return {
-    signal: { key: 'news', label: SIGNAL_LABELS.news, score: Math.round(clamp(50 + 50 * shrunk)), weight: WEIGHTS.news, reading: `${pos} positive / ${neg} negative of ${used.length} headlines, last 48h`, source: 'Publisher RSS, recency-weighted (12h half-life)' },
+    signal: { key: 'news', label: SIGNAL_LABELS.news, score: Math.round(clamp(50 + 50 * shrunk)), weight: WEIGHTS.news, reading: `${pos} positive / ${neg} negative of ${used.length} macro headlines, last 48h`, source: 'Market-wide publisher RSS only, recency-weighted (12h half-life)' },
     headlines: used,
   };
 };

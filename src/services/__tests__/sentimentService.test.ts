@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { breadthSignal, combineSignals, flowsSignal, globalSignal, labelFor, newsSignal, scoreHeadline, trendSignal, volatilitySignal } from '../sentimentService';
+import { breadthSignal, combineSignals, flowsSignal, globalSignal, labelFor, isMarketWideHeadline, newsSignal, scoreHeadline, trendSignal, volatilitySignal } from '../sentimentService';
 import type { StockQuote } from '../multiSourceDataService';
 
 const now = Date.parse('2026-10-08T06:00:00Z');
@@ -52,14 +52,43 @@ describe('headline lexicon', () => {
     expect(scoreHeadline('Sensex crashes 900 points as FIIs dump shares').score).toBeLessThan(-0.5);
     expect(scoreHeadline('Nifty hits record high on strong earnings').score).toBeGreaterThan(0.5);
     expect(scoreHeadline('RBI rate hike worries markets').score).toBeLessThan(-0.3);
+    expect(scoreHeadline('India bonds hemmed in as market digests higher rates').score).toBeLessThan(-0.3);
     expect(scoreHeadline('Market does not fall despite weak cues').score).toBeGreaterThan(-0.2);
     expect(scoreHeadline('Company announces board meeting').matched).toHaveLength(0);
   });
+  it.each([
+    'ITC dips 4% as markets fall', 'Paytm crashes after RBI action',
+    'Senco Gold surges 10%', 'New IPO listing jumps 30%',
+    'ABC stock price rises after RBI rate cut', 'XYZ shares fall amid global selloff',
+    'Reliance quarterly results beat estimates', 'Broker upgrades Infosys as Nifty rallies',
+    'Company announces a dividend', 'ABC shares soar after crude prices fall',
+  ])('excludes company story: %s', title => expect(isMarketWideHeadline(title)).toBe(false));
+  it.each([
+    'Global selloff sparks fears', 'RBI rate hike worries markets',
+    'Nifty falls 200 points', 'Sensex rallies at open', 'FII outflows rise',
+    'DII buying cushions markets', 'Asian stocks plunge', 'Wall Street rebounds',
+    'Brent crude surges amid war', 'Rupee falls against dollar',
+    'Inflation jumps above target', 'Federal Reserve cuts interest rates',
+    'Bond yields surge', 'India bonds hemmed in as market digests higher rates',
+    'Global Market: China stocks slide as tech valuations face earnings test',
+    'Taking Stock: Market fails to hold gains', 'Cooling volatility sparks market rally, India VIX falls',
+    'Sensex, Nifty extend gains to 3rd day, Q4 results to guide stock-specific action', 'Tariffs spark global trade war', 'Ceasefire brings relief',
+  ])('includes market-wide story: %s', title => expect(isMarketWideHeadline(title)).toBe(true));
+  it('company headlines cannot change the news signal, even with macro descriptions', () => {
+    const h = (title: string) => ({ title, description: 'RBI rate hike and global markets', source: 'P', url: 'https://e.com/' + encodeURIComponent(title), publishedAt: new Date(now).toISOString(), dataMode: 'live' });
+    const macro = ['Global markets fall', 'RBI rate hike worries markets', 'FII outflows rise'].map(h);
+    const companies = ['ITC dips 4%', 'Paytm crash', 'Senco Gold surges', 'IPO listing jumps'].map(h);
+    const baseline = newsSignal({ articles: macro, now });
+    const mixed = newsSignal({ articles: [...companies, ...macro], now });
+    expect(mixed.signal).toEqual(baseline.signal);
+    expect(mixed.headlines.map(h => h.title)).toEqual(macro.map(h => h.title));
+    expect(newsSignal({ articles: companies, now }).signal).toBeNull();
+  });
   it('uses only sourced recent headlines and needs three scored ones', () => {
     const h = (title: string, hoursAgo = 1) => ({ title, source: 'P', url: `https://e.com/${title.length}${hoursAgo}`, publishedAt: new Date(now - hoursAgo * 3_600_000).toISOString(), dataMode: 'live' });
-    const few = newsSignal({ articles: [h('Shares rally'), h('Stocks fall on losses')], now });
+    const few = newsSignal({ articles: [h('Global stocks rally'), h('Indian stocks fall on losses')], now });
     expect(few.signal).toBeNull();
-    const many = newsSignal({ articles: [h('Shares rally on strong earnings'), h('Bank stock surges'), h('Nifty jumps at open'), h('Old crash', 70)], now });
+    const many = newsSignal({ articles: [h('Global stocks rally on relief'), h('RBI rate cut lifts markets'), h('Nifty jumps at open'), h('Old crash', 70)], now });
     expect(many.signal!.score).toBeGreaterThan(60);
     expect(many.headlines).toHaveLength(3);
   });
