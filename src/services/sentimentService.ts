@@ -142,7 +142,7 @@ const LEX: [RegExp, number][] = [
   [/\b(crash(?:es|ed)?|plunges?|plummets?|tanks?|collapses?|meltdown|bloodbath|rout)\b/, -3], [/\b(sell-?off|slumps?|tumbles?|sinks?|slides?|nosedives?|panic)\b/, -2.5],
   [/\b(falls?|fell|drops?|declines?|slips?|dips?|weakens?|retreats?|loses?|losses)\b/, -1.5],
   [/\b(misses?|downgrades?|underperform\w*|sell rating|profit (?:falls?|slumps?|drops?)|weak (?:results?|earnings|demand)|outflows?|net sellers?|selling|dumps?|offloads?)\b/, -1.5],
-  [/\b(rate hikes?|hikes? (?:repo|rates?)|tariffs?|sanctions?|war|conflict|escalat\w+|inflation (?:rises?|jumps?|spikes?)|recession|default|fraud|probe|penalty|ban)\b/, -2], [/\b(bearish|worr(?:y|ies|ied)|fears?|concerns?|uncertain\w*|volatil\w+|risk-?off|pressure|headwinds?)\b/, -1],
+  [/\b(rate hikes?|higher (?:interest )?rates|hikes? (?:repo|rates?)|tariffs?|sanctions?|war|conflict|escalat\w+|inflation (?:rises?|jumps?|spikes?)|recession|default|fraud|probe|penalty|ban)\b/, -2], [/\b(bearish|worr(?:y|ies|ied)|fears?|concerns?|uncertain\w*|volatil\w+|risk-?off|pressure|headwinds?)\b/, -1],
 ];
 const NEG = /\b(no|not|never|without|fails? to|unlikely to|ends?|snaps?|halts?|stops?)\b(?:\W+\w+){0,2}?\W+$/;
 export const scoreHeadline = (title: string): { score: number; matched: string[] } => {
