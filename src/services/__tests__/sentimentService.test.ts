@@ -1,26 +1,76 @@
 import { describe, expect, it } from 'vitest';
-import { calculateSentiment, classifyHeadline } from '../sentimentService';
+import { breadthSignal, combineSignals, flowsSignal, globalSignal, labelFor, newsSignal, scoreHeadline, trendSignal, volatilitySignal } from '../sentimentService';
 import type { StockQuote } from '../multiSourceDataService';
-const now = Date.parse('2026-09-29T05:00:00Z');
-const quote = (changePercent: number, source = 'yahoo', timestamp = now): StockQuote => ({ symbol: 'X', name: 'X', price: 100, change: changePercent, changePercent, previousClose: 99, source, timestamp });
-const syms = Array.from({ length: 10 }, (_, i) => `S${i}`);
-const headline = (title: string, publishedAt = new Date(now).toISOString()) => ({ title, source: 'Publisher', url: 'https://example.com/story', publishedAt, dataMode: 'live' });
-describe('market sentiment', () => {
-  it('uses actual valid quotes and excludes backup/stale', () => {
-    const q = new Map(syms.map((s, i) => [s, quote(i < 7 ? 1 : -1)]));
-    expect(calculateSentiment(q, syms, [], now).breadth).toMatchObject({ positive: 7, negative: 3, score: 70 });
-    q.set('S0', quote(1, 'backup')); q.set('S1', quote(1, 'yahoo', now - 900_001)); q.set('S2', quote(1, 'yahoo', now + 1));
-    expect(calculateSentiment(q, syms, [], now)).toMatchObject({ score: null, breadth: null, coverage: 7, label: 'Unavailable' });
+
+const now = Date.parse('2026-10-08T06:00:00Z');
+const q = (changePercent: number, source = 'yahoo', timestamp = now): StockQuote => ({ symbol: 'X', name: 'X', price: 100, change: changePercent, changePercent, previousClose: 99, source, timestamp });
+const members = Array.from({ length: 20 }, (_, i) => ({ symbol: `S${i}`, w: 5 }));
+const rising = (n: number, step = 0.4) => Array.from({ length: n }, (_, i) => 100 + i * step);
+
+describe('breadth', () => {
+  it('scores weighted advance/decline and ignores backup or stale quotes', () => {
+    const up = new Map(members.map(m => [m.symbol, q(1)]));
+    expect(breadthSignal({ quotes: up, members, now })!.score).toBeGreaterThan(75);
+    const down = new Map(members.map(m => [m.symbol, q(-1)]));
+    expect(breadthSignal({ quotes: down, members, now })!.score).toBeLessThan(25);
+    const bad = new Map(members.map(m => [m.symbol, q(1, 'backup')]));
+    expect(breadthSignal({ quotes: bad, members, now })).toBeNull();
+    const stale = new Map(members.map(m => [m.symbol, q(1, 'yahoo', now - 16 * 60_000)]));
+    expect(breadthSignal({ quotes: stale, members, now })).toBeNull();
   });
-  it('scores only sourced recent news, separates macro, and rebalances', () => {
-    const a = [headline('Shares rally on profit growth'), headline('Bank stock surges'), headline('Nifty falls on losses'), headline('RBI rate hike'), headline('Old rally', '2026-09-01T00:00:00Z')];
-    const r = calculateSentiment(new Map(), syms, a, now);
-    expect(r).toMatchObject({ breadth: null, news: { positive: 2, negative: 1, score: 67 }, macro: { negative: 1, score: 0 }, score: 42 });
-    expect(r.headlines).toHaveLength(3);
-    expect(r.macroHeadlines).toHaveLength(1);
+});
+describe('trend and volatility', () => {
+  it('rewards an uptrend, punishes a downtrend, needs history', () => {
+    expect(trendSignal(rising(120))!.score).toBeGreaterThan(60);
+    expect(trendSignal(rising(120, -0.4))!.score).toBeLessThan(40);
+    expect(trendSignal(rising(30))).toBeNull();
   });
-  it('does not treat negations or unknown headlines as bullish', () => {
-    expect(classifyHeadline('No gains after results').tone).toBe('neutral');
-    expect(classifyHeadline('Company announces board meeting').tone).toBe('neutral');
+  it('scores a calm VIX high and a spiking VIX low', () => {
+    const base = Array.from({ length: 120 }, (_, i) => 14 + (i % 7));
+    expect(volatilitySignal([...base, 12])!.score).toBeGreaterThan(70);
+    expect(volatilitySignal([...base, 30])!.score).toBeLessThan(25);
+  });
+});
+describe('flows', () => {
+  const rows = (v: number) => Array.from({ length: 20 }, (_, i) => ({ l: `2026-10-${String(7 - (i % 7)).padStart(2, '0')}`, v })).map((r, i) => ({ ...r, l: new Date(Date.parse('2026-10-07') - i * 86_400_000).toISOString().slice(0, 10) }));
+  it('FII selling with weak DII is negative; stale data is dropped', () => {
+    expect(flowsSignal({ fii: rows(-6000), dii: rows(1000) }, now)!.score).toBeLessThan(35);
+    expect(flowsSignal({ fii: rows(5000), dii: rows(2000) }, now)!.score).toBeGreaterThan(65);
+    expect(flowsSignal({ fii: rows(-6000), dii: rows(1000) }, now + 30 * 86_400_000)).toBeNull();
+  });
+});
+describe('global cues', () => {
+  it('treats weaker rupee and dearer crude as negative', () => {
+    const m = (spx: number, brent: number, inr: number) => [{ key: 'spx' as const, name: 'S&P', changePct: spx }, { key: 'nikkei' as const, name: 'N', changePct: spx }, { key: 'brent' as const, name: 'B', changePct: brent }, { key: 'inr' as const, name: 'I', changePct: inr }];
+    expect(globalSignal(m(1, -2, -0.3))!.score).toBeGreaterThan(70);
+    expect(globalSignal(m(-1, 3, 0.4))!.score).toBeLessThan(30);
+    expect(globalSignal([{ key: 'nikkei', name: 'N', changePct: 1 }, { key: 'hsi', name: 'H', changePct: 1 }, { key: 'brent', name: 'B', changePct: 1 }])).toBeNull();
+  });
+});
+describe('headline lexicon', () => {
+  it('reads direction, magnitude and negation', () => {
+    expect(scoreHeadline('Sensex crashes 900 points as FIIs dump shares').score).toBeLessThan(-0.5);
+    expect(scoreHeadline('Nifty hits record high on strong earnings').score).toBeGreaterThan(0.5);
+    expect(scoreHeadline('RBI rate hike worries markets').score).toBeLessThan(-0.3);
+    expect(scoreHeadline('Market does not fall despite weak cues').score).toBeGreaterThan(-0.2);
+    expect(scoreHeadline('Company announces board meeting').matched).toHaveLength(0);
+  });
+  it('uses only sourced recent headlines and needs three scored ones', () => {
+    const h = (title: string, hoursAgo = 1) => ({ title, source: 'P', url: `https://e.com/${title.length}${hoursAgo}`, publishedAt: new Date(now - hoursAgo * 3_600_000).toISOString(), dataMode: 'live' });
+    const few = newsSignal({ articles: [h('Shares rally'), h('Stocks fall on losses')], now });
+    expect(few.signal).toBeNull();
+    const many = newsSignal({ articles: [h('Shares rally on strong earnings'), h('Bank stock surges'), h('Nifty jumps at open'), h('Old crash', 70)], now });
+    expect(many.signal!.score).toBeGreaterThan(60);
+    expect(many.headlines).toHaveLength(3);
+  });
+});
+describe('composite', () => {
+  it('rebalances missing signals, refuses to score on thin data, labels bands', () => {
+    const mk = (key: any, score: number, weight: number) => ({ key, label: key, score, weight, reading: '', source: '' });
+    const r = combineSignals([mk('breadth', 80, 0.22), mk('trend', 60, 0.2), mk('flows', 40, 0.16), null, null, null], [], now);
+    expect(r.score).toBe(Math.round((80 * 0.22 + 60 * 0.2 + 40 * 0.16) / 0.58));
+    expect(r.missing).toHaveLength(3);
+    expect(combineSignals([mk('breadth', 80, 0.22), mk('trend', 60, 0.2), null, null, null, null], [], now).score).toBeNull();
+    expect([labelFor(75), labelFor(60), labelFor(50), labelFor(40), labelFor(20), labelFor(null)]).toEqual(['Bullish', 'Constructive', 'Neutral', 'Cautious', 'Bearish', 'Unavailable']);
   });
 });

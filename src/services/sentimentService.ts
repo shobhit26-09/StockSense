@@ -1,5 +1,15 @@
 import type { StockQuote } from '@/services/multiSourceDataService';
 
+/**
+ * Market sentiment engine.
+ * Six independent, sourced signals are each mapped to a 0-100 score (50 = neutral),
+ * then blended with fixed weights. A signal with no valid live input is dropped and
+ * the remaining weights are rebalanced - nothing is ever filled in with a made-up number.
+ */
+
+export type Tone = 'positive' | 'negative' | 'neutral';
+export type SignalKey = 'breadth' | 'trend' | 'volatility' | 'flows' | 'global' | 'news';
+
 export interface SentimentHeadline {
   title: string;
   source: string;
@@ -8,66 +18,191 @@ export interface SentimentHeadline {
   description?: string;
   dataMode?: string;
 }
-export type Tone = 'positive' | 'negative' | 'neutral';
-export interface HeadlineSignal extends SentimentHeadline { tone: Tone; matched: string[] }
-export interface SentimentComponent { score: number; count: number; positive: number; negative: number; neutral: number }
-export interface SentimentResult {
-  score: number | null;
+export interface HeadlineSignal extends SentimentHeadline { tone: Tone; score: number; matched: string[]; ageHours: number }
+
+export interface SignalResult {
+  key: SignalKey;
   label: string;
-  breadth: SentimentComponent | null;
-  news: SentimentComponent | null;
-  macro: SentimentComponent | null;
-  headlines: HeadlineSignal[];
-  macroHeadlines: HeadlineSignal[];
-  coverage: number;
-  total: number;
-  updatedAt: number;
+  /** 0-100, 50 neutral. */
+  score: number;
+  weight: number;
+  /** Short plain-text reading shown in the table, e.g. "34 up / 16 down". */
+  reading: string;
+  /** Where the number comes from. */
+  source: string;
 }
 
-// These are directional headline cues, not article sentiment or measured economic outcomes.
-// Negations are deliberately treated as unclassified to avoid false precision.
-const UP = /\b(gains?|rall(?:y|ies)|surges?|rises?|rebound(?:s|ed)?|growth|beats?|eases?|cools?|cuts?|upgrades?)\b/gi;
-const DOWN = /\b(falls?|drops?|slumps?|declines?|loss(?:es)?|tumbles?|inflation|hikes?|downgrades?|misses?|weakens?|contracts?|tariffs?)\b/gi;
-const MACRO = /\b(RBI|SEBI|Fed|FOMC|GDP|CPI|inflation|interest rates?|repo rates?|rate cuts?|rate hikes?|rupee|currency|yields?|tariffs?|jobs|employment|fiscal|budget|crude oil)\b/i;
-const NEGATED = /\b(no|not|never|without|less than)\b/i;
+export interface SentimentResult {
+  score: number | null;
+  label: SentimentLabel;
+  signals: SignalResult[];
+  missing: { key: SignalKey; label: string }[];
+  headlines: HeadlineSignal[];
+  /** Share of the full weight that had live data (0-1). */
+  confidence: number;
+  topDriver: SignalResult | null;
+  topDrag: SignalResult | null;
+  updatedAt: number;
+}
+export type SentimentLabel = 'Bullish' | 'Constructive' | 'Neutral' | 'Cautious' | 'Bearish' | 'Unavailable';
 
-export const classifyHeadline = (title: string): { tone: Tone; matched: string[] } => {
-  if (NEGATED.test(title)) return { tone: 'neutral', matched: [] };
-  const up = [...title.matchAll(UP)].map(m => m[0].toLowerCase());
-  const down = [...title.matchAll(DOWN)].map(m => m[0].toLowerCase());
-  return { tone: up.length > down.length ? 'positive' : down.length > up.length ? 'negative' : 'neutral', matched: [...up, ...down] };
+export const WEIGHTS: Record<SignalKey, number> = { breadth: 0.22, trend: 0.2, volatility: 0.14, flows: 0.16, global: 0.14, news: 0.14 };
+export const SIGNAL_LABELS: Record<SignalKey, string> = {
+  breadth: 'Market breadth', trend: 'Index trend', volatility: 'Volatility (India VIX)',
+  flows: 'Institutional flows', global: 'Global cues', news: 'News tone',
 };
 
-const aggregate = (values: Tone[]): SentimentComponent => {
-  const positive = values.filter(v => v === 'positive').length;
-  const negative = values.filter(v => v === 'negative').length;
-  const neutral = values.length - positive - negative;
-  return { score: Math.round(50 + 50 * (positive - negative) / values.length), count: values.length, positive, negative, neutral };
+const clamp = (v: number, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, v));
+const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const sma = (v: number[], n: number) => v.length >= n ? v.slice(-n).reduce((a, b) => a + b, 0) / n : null;
+const pct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+/** Smooth squash: maps x (in units where `scale` is a "strong" move) into 0-100 around 50. */
+const squash = (x: number, scale: number) => 50 + 50 * Math.tanh(x / scale);
+
+export const labelFor = (score: number | null): SentimentLabel =>
+  score === null ? 'Unavailable' : score >= 70 ? 'Bullish' : score >= 56 ? 'Constructive' : score > 44 ? 'Neutral' : score > 30 ? 'Cautious' : 'Bearish';
+
+/* ---------- 1. Breadth: index-weighted advance/decline plus average move ---------- */
+export interface BreadthInput { quotes: Map<string, StockQuote>; members: { symbol: string; w: number }[]; now?: number }
+export const breadthSignal = ({ quotes, members, now = Date.now() }: BreadthInput): SignalResult | null => {
+  const live = members
+    .map(m => ({ m, q: quotes.get(m.symbol) }))
+    .filter((x): x is { m: { symbol: string; w: number }; q: StockQuote } => Boolean(x.q && x.q.source === 'yahoo' && finite(x.q.changePercent) && x.q.price > 0 && now >= x.q.timestamp && now - x.q.timestamp < 15 * 60_000));
+  if (live.length < 12) return null;
+  const totalW = live.reduce((s, x) => s + x.m.w, 0);
+  const up = live.filter(x => x.q.changePercent > 0.05);
+  const down = live.filter(x => x.q.changePercent < -0.05);
+  const wUp = up.reduce((s, x) => s + x.m.w, 0), wDown = down.reduce((s, x) => s + x.m.w, 0);
+  const ad = (wUp - wDown) / totalW; // -1..1 by index weight
+  const avg = live.reduce((s, x) => s + x.m.w * x.q.changePercent, 0) / totalW;
+  const score = clamp(0.55 * (50 + 50 * ad) + 0.45 * squash(avg, 1.2));
+  return { key: 'breadth', label: SIGNAL_LABELS.breadth, score: Math.round(score), weight: WEIGHTS.breadth, reading: `${up.length} up / ${down.length} down, weighted move ${pct(avg)}`, source: `NIFTY heavyweights, ${live.length} live Yahoo quotes` };
 };
 
-export const calculateSentiment = (quotes: Map<string, StockQuote>, symbols: string[], articles: SentimentHeadline[], now = Date.now()): SentimentResult => {
-  const freshQuotes = symbols.map(s => quotes.get(s)).filter((q): q is StockQuote => Boolean(q && q.source === 'yahoo' && now - q.timestamp < 15 * 60_000 && now >= q.timestamp && Number.isFinite(q.changePercent) && q.price > 0));
-  const breadth = freshQuotes.length >= 8 ? aggregate(freshQuotes.map(q => q.changePercent > 0.05 ? 'positive' : q.changePercent < -0.05 ? 'negative' : 'neutral')) : null;
+/* ---------- 2. Trend: NIFTY vs its 20/50-day averages and 1-month return ---------- */
+export const trendSignal = (closes: number[] | null): SignalResult | null => {
+  if (!closes || closes.length < 55) return null;
+  const last = closes[closes.length - 1];
+  const m20 = sma(closes, 20)!, m50 = sma(closes, 50)!;
+  const d20 = 100 * (last / m20 - 1), d50 = 100 * (last / m50 - 1);
+  const r1m = 100 * (last / closes[closes.length - 22] - 1);
+  const slope = 100 * (m20 / (sma(closes.slice(0, -5), 20) ?? m20) - 1); // is the 20DMA rising?
+  const score = clamp(0.35 * squash(d20, 2.5) + 0.3 * squash(d50, 4) + 0.2 * squash(r1m, 5) + 0.15 * squash(slope, 1));
+  return { key: 'trend', label: SIGNAL_LABELS.trend, score: Math.round(score), weight: WEIGHTS.trend, reading: `${pct(d20)} vs 20DMA, ${pct(d50)} vs 50DMA, 1M ${pct(r1m)}`, source: 'NIFTY 50 daily closes, Yahoo' };
+};
+
+/* ---------- 3. Volatility: VIX level vs its own 6M range, plus today's jump ---------- */
+export const volatilitySignal = (closes: number[] | null): SignalResult | null => {
+  if (!closes || closes.length < 40) return null;
+  const last = closes[closes.length - 1], prev = closes[closes.length - 2];
+  const below = closes.filter(c => c <= last).length / closes.length; // percentile 0-1
+  const day = 100 * (last / prev - 1);
+  const score = clamp(0.7 * (100 - 100 * below) + 0.3 * (50 - 50 * Math.tanh(day / 6)));
+  return { key: 'volatility', label: SIGNAL_LABELS.volatility, score: Math.round(score), weight: WEIGHTS.volatility, reading: `${last.toFixed(2)} (${pct(day)} today), ${Math.round(100 * below)}th percentile of 6M`, source: 'India VIX daily closes, Yahoo' };
+};
+
+/* ---------- 4. Flows: FII and DII net cash-market buying ---------- */
+export interface FlowRow { l: string; v: number }
+export interface FlowInput { fii: FlowRow[]; dii: FlowRow[]; updatedAt?: string }
+const crore = (n: number) => `${n < 0 ? '-' : '+'}₹${Math.abs(Math.round(n)).toLocaleString('en-IN')} cr`;
+export const flowsSignal = (flows: FlowInput | null, now = Date.now()): SignalResult | null => {
+  if (!flows) return null;
+  const take = (rows: FlowRow[]) => rows.filter(r => finite(r.v) && /^\d{4}-\d{2}-\d{2}$/.test(r.l)).sort((a, b) => b.l.localeCompare(a.l));
+  const fii = take(flows.fii), dii = take(flows.dii);
+  if (fii.length < 5 || dii.length < 5) return null;
+  if (now - Date.parse(`${fii[0].l}T00:00:00+05:30`) > 6 * 86_400_000) return null; // stale feed is not a signal
+  const f5 = fii.slice(0, 5).reduce((s, r) => s + r.v, 0), d5 = dii.slice(0, 5).reduce((s, r) => s + r.v, 0);
+  const f1 = fii[0].v;
+  const fSeries = fii.slice(0, 20), mean = fSeries.reduce((s, r) => s + r.v, 0) / fSeries.length;
+  const sd = Math.sqrt(fSeries.reduce((s, r) => s + (r.v - mean) ** 2, 0) / fSeries.length) || 5000;
+  const net5 = f5 + 0.5 * d5; // DII cushions FII selling, but only partly
+  const score = clamp(0.6 * squash(net5, 5 * sd * 0.8) + 0.4 * squash(f1, 1.5 * sd));
+  return { key: 'flows', label: SIGNAL_LABELS.flows, score: Math.round(score), weight: WEIGHTS.flows, reading: `FII ${crore(f5)}, DII ${crore(d5)} over 5 sessions`, source: `NSE/BSE provisional data via StockEdge, to ${fii[0].l}` };
+};
+
+/* ---------- 5. Global cues: US, Japan, Hong Kong, crude and the rupee ---------- */
+export interface GlobalMove { key: 'spx' | 'nikkei' | 'hsi' | 'brent' | 'inr'; name: string; changePct: number }
+const GLOBAL_RULES: Record<GlobalMove['key'], { sign: 1 | -1; scale: number; w: number }> = {
+  spx: { sign: 1, scale: 1.2, w: 0.35 }, nikkei: { sign: 1, scale: 1.5, w: 0.15 }, hsi: { sign: 1, scale: 1.8, w: 0.15 },
+  brent: { sign: -1, scale: 2.5, w: 0.2 }, inr: { sign: -1, scale: 0.5, w: 0.15 }, // USDINR up = rupee weaker = negative
+};
+export const globalSignal = (moves: GlobalMove[]): SignalResult | null => {
+  const ok = moves.filter(m => finite(m.changePct));
+  if (ok.length < 3 || !ok.some(m => m.key === 'spx')) return null;
+  const tw = ok.reduce((s, m) => s + GLOBAL_RULES[m.key].w, 0);
+  const score = ok.reduce((s, m) => { const r = GLOBAL_RULES[m.key]; return s + r.w * squash(r.sign * m.changePct, r.scale); }, 0) / tw;
+  return { key: 'global', label: SIGNAL_LABELS.global, score: Math.round(clamp(score)), weight: WEIGHTS.global, reading: ok.map(m => `${m.name} ${pct(m.changePct)}`).join(', '), source: 'Last daily close vs prior close, Yahoo' };
+};
+
+/* ---------- 6. News: weighted finance lexicon, negation-aware, recency-decayed ---------- */
+const LEX: [RegExp, number][] = [
+  [/\b(record high|all-time high|fresh high|52-week high)\b/, 3], [/\b(surges?|soars?|skyrockets?|jumps?|zooms?|bull run)\b/, 2.5], [/\b(rall(?:y|ies|ied)|rebounds?|recovers?|climbs?|gains?|advances?|rises?|rose)\b/, 1.5],
+  [/\b(beats?|upgrades?|outperform\w*|buy rating|strong (?:results?|earnings|demand)|profit (?:jumps?|rises?|growth)|inflows?|net buyers?|buying)\b/, 1.5],
+  [/\b(rate cuts?|cuts? (?:repo|rates?)|eases?|cools?|softens?|ceasefire|trade deal|stimulus|relief)\b/, 1.5], [/\b(optimis\w+|bullish|upbeat|positive|resilient|robust)\b/, 1],
+  [/\b(crash(?:es|ed)?|plunges?|plummets?|tanks?|collapses?|meltdown|bloodbath|rout)\b/, -3], [/\b(sell-?off|slumps?|tumbles?|sinks?|slides?|nosedives?|panic)\b/, -2.5],
+  [/\b(falls?|fell|drops?|declines?|slips?|dips?|weakens?|retreats?|loses?|losses)\b/, -1.5],
+  [/\b(misses?|downgrades?|underperform\w*|sell rating|profit (?:falls?|slumps?|drops?)|weak (?:results?|earnings|demand)|outflows?|net sellers?|selling|dumps?|offloads?)\b/, -1.5],
+  [/\b(rate hikes?|hikes? (?:repo|rates?)|tariffs?|sanctions?|war|conflict|escalat\w+|inflation (?:rises?|jumps?|spikes?)|recession|default|fraud|probe|penalty|ban)\b/, -2], [/\b(bearish|worr(?:y|ies|ied)|fears?|concerns?|uncertain\w*|volatil\w+|risk-?off|pressure|headwinds?)\b/, -1],
+];
+const NEG = /\b(no|not|never|without|fails? to|unlikely to|ends?|snaps?|halts?|stops?)\b(?:\W+\w+){0,2}?\W+$/;
+export const scoreHeadline = (title: string): { score: number; matched: string[] } => {
+  const text = ` ${title.toLowerCase().replace(/[’']/g, "'")} `;
+  let total = 0; const matched: string[] = [];
+  const seen = new Set<string>();
+  for (const [re, w] of LEX) {
+    const g = new RegExp(re.source, 'g');
+    for (const m of text.matchAll(g)) {
+      const term = m[0].trim();
+      if (seen.has(term)) continue;
+      seen.add(term);
+      const before = text.slice(0, m.index);
+      const negated = NEG.test(before.slice(-28));
+      total += negated ? -0.6 * w : w;
+      matched.push(negated ? `not ${term}` : term);
+    }
+  }
+  return { score: clamp(total, -4, 4) / 4, matched };
+};
+
+export interface NewsInput { articles: SentimentHeadline[]; now?: number }
+export const newsSignal = ({ articles, now = Date.now() }: NewsInput): { signal: SignalResult | null; headlines: HeadlineSignal[] } => {
   const unique = new Set<string>();
-  const recent = articles.filter(a => {
+  const headlines: HeadlineSignal[] = [];
+  for (const a of articles) {
     const age = now - Date.parse(a.publishedAt);
-    if (!a.title || !/^https:\/\//.test(a.url) || a.dataMode !== 'live' || !Number.isFinite(age) || age < -10 * 60_000 || age > 48 * 60 * 60_000) return false;
-    const key = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80);
-    if (unique.has(key)) return false;
+    if (!a.title || !/^https:\/\//.test(a.url) || a.dataMode !== 'live' || !Number.isFinite(age) || age < -10 * 60_000 || age > 48 * 3_600_000) continue;
+    const key = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 70);
+    if (unique.has(key)) continue;
     unique.add(key);
-    return true;
-  }).slice(0, 20);
-  const tagged: HeadlineSignal[] = recent.map(a => ({ ...a, ...classifyHeadline(a.title) }));
-  const macroHeadlines = tagged.filter(a => MACRO.test(a.title));
-  const headlines = tagged.filter(a => !MACRO.test(a.title));
-  const news = headlines.length >= 3 ? aggregate(headlines.map(h => h.tone)) : null;
-  const macro = macroHeadlines.length >= 1 ? aggregate(macroHeadlines.map(h => h.tone)) : null;
-  const inputs = [{ value: breadth, weight: 0.6 }, { value: news, weight: 0.25 }, { value: macro, weight: 0.15 }].filter(x => x.value !== null);
-  const score = inputs.length ? Math.round(inputs.reduce((sum, x) => sum + x.value!.score * x.weight, 0) / inputs.reduce((sum, x) => sum + x.weight, 0)) : null;
+    const { score, matched } = scoreHeadline(a.title);
+    headlines.push({ ...a, score, matched, tone: score > 0.12 ? 'positive' : score < -0.12 ? 'negative' : 'neutral', ageHours: Math.max(0, age / 3_600_000) });
+  }
+  headlines.sort((a, b) => a.ageHours - b.ageHours);
+  const used = headlines.slice(0, 24);
+  const scored = used.filter(h => h.matched.length);
+  if (scored.length < 3) return { signal: null, headlines: used };
+  let num = 0, den = 0;
+  for (const h of scored) { const w = Math.pow(0.5, h.ageHours / 12); num += w * h.score; den += w; }
+  const mean = num / den;
+  const shrunk = mean * (scored.length / (scored.length + 3)); // few headlines pull toward neutral
+  const pos = used.filter(h => h.tone === 'positive').length, neg = used.filter(h => h.tone === 'negative').length;
   return {
-    score,
-    label: score === null ? 'Unavailable' : score >= 62 ? 'Positive' : score <= 38 ? 'Negative' : 'Mixed',
-    breadth, news, macro, headlines, macroHeadlines,
-    coverage: freshQuotes.length, total: symbols.length, updatedAt: now,
+    signal: { key: 'news', label: SIGNAL_LABELS.news, score: Math.round(clamp(50 + 50 * shrunk)), weight: WEIGHTS.news, reading: `${pos} positive / ${neg} negative of ${used.length} headlines, last 48h`, source: 'Publisher RSS, recency-weighted (12h half-life)' },
+    headlines: used,
   };
+};
+
+/* ---------- Composite ---------- */
+export const combineSignals = (signals: (SignalResult | null)[], headlines: HeadlineSignal[], now = Date.now()): SentimentResult => {
+  const live = signals.filter((s): s is SignalResult => s !== null);
+  const have = new Set(live.map(s => s.key));
+  const missing = (Object.keys(WEIGHTS) as SignalKey[]).filter(k => !have.has(k)).map(k => ({ key: k, label: SIGNAL_LABELS[k] }));
+  const tw = live.reduce((s, x) => s + x.weight, 0);
+  const confidence = tw; // weights sum to 1 when everything is live
+  const score = live.length >= 3 && tw >= 0.5 ? Math.round(live.reduce((s, x) => s + x.score * x.weight, 0) / tw) : null;
+  const byImpact = [...live].sort((a, b) => (b.score - 50) * b.weight - (a.score - 50) * a.weight);
+  const topDriver = byImpact[0] && byImpact[0].score > 55 ? byImpact[0] : null;
+  const last = byImpact[byImpact.length - 1];
+  const topDrag = last && last.score < 45 ? last : null;
+  return { score, label: labelFor(score), signals: live, missing, headlines, confidence, topDriver, topDrag, updatedAt: now };
 };
