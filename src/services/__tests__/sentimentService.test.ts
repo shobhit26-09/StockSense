@@ -52,6 +52,7 @@ describe('headline lexicon', () => {
     expect(scoreHeadline('Sensex crashes 900 points as FIIs dump shares').score).toBeLessThan(-0.5);
     expect(scoreHeadline('Nifty hits record high on strong earnings').score).toBeGreaterThan(0.5);
     expect(scoreHeadline('RBI rate hike worries markets').score).toBeLessThan(-0.3);
+    expect(scoreHeadline('India bonds hemmed in as market digests higher rates').score).toBeLessThan(-0.3);
     expect(scoreHeadline('Market does not fall despite weak cues').score).toBeGreaterThan(-0.2);
     expect(scoreHeadline('Company announces board meeting').matched).toHaveLength(0);
   });
