@@ -68,7 +68,10 @@ describe('headline lexicon', () => {
     'DII buying cushions markets', 'Asian stocks plunge', 'Wall Street rebounds',
     'Brent crude surges amid war', 'Rupee falls against dollar',
     'Inflation jumps above target', 'Federal Reserve cuts interest rates',
-    'Bond yields surge', 'Tariffs spark global trade war', 'Ceasefire brings relief',
+    'Bond yields surge', 'India bonds hemmed in as market digests higher rates',
+    'Global Market: China stocks slide as tech valuations face earnings test',
+    'Taking Stock: Market fails to hold gains', 'Cooling volatility sparks market rally, India VIX falls',
+    'Sensex, Nifty extend gains to 3rd day, Q4 results to guide stock-specific action', 'Tariffs spark global trade war', 'Ceasefire brings relief',
   ])('includes market-wide story: %s', title => expect(isMarketWideHeadline(title)).toBe(true));
   it('company headlines cannot change the news signal, even with macro descriptions', () => {
     const h = (title: string) => ({ title, description: 'RBI rate hike and global markets', source: 'P', url: 'https://e.com/' + encodeURIComponent(title), publishedAt: new Date(now).toISOString(), dataMode: 'live' });
