@@ -169,16 +169,17 @@ export const scoreHeadline = (title: string): { score: number; matched: string[]
  * Conservative allow-list: unclear stories stay in News, but do not move this gauge.
  */
 export const isMarketWideHeadline = (title: string): boolean => {
-  const text = title.toLowerCase().replace(/[’']/g, "'");
+  const text = title.toLowerCase().replace(/[’']/g, "'").replace(/^(?:taking stock|mid-day mood|global markets?)\s*[:|]\s*/, '');
   const companyStory = /\b(ipo|ipos|gmp|grey market|listing|lists|debut|q[1-4]|quarterly|earnings|results|dividend|buyback|stock split|bonus shares|price target|target price|buy rating|sell rating|upgrade|downgrade|order win|order book|stake sale|merger|acquisition)\b/;
-  if (companyStory.test(text)) return false;
+  if (/\b(ipo|ipos|gmp|grey market|listing|lists|debut)\b/.test(text)) return false;
   // A named stock remains a company story even when its explanation mentions RBI,
   // crude or a broad sell-off. Aggregate equity/index subjects are the exception.
-  const aggregate = /\b(nifty|sensex|indices|indexes|s&p\s*500|nasdaq|dow jones|nikkei|hang seng|ftse|dax|stoxx|wall street|dalal street|(?:global|world|asian|asia|european|europe|us|u\.s\.|indian|india|domestic|emerging|equity|stock|share|financial|broader)\s+(?:stock\s+|equity\s+)?markets?|(?:global|asian|european|us|indian|domestic|emerging)\s+(?:stocks|equities|shares)|stocks? market|market breadth)\b/;
+  const aggregate = /\b(nifty|sensex|indices|indexes|s&p\s*500|nasdaq|dow jones|nikkei|hang seng|ftse|dax|stoxx|wall street|dalal street|india vix|(?:india|indian|us|u\.s\.)\s+bonds?|(?:global|world|asian|asia|european|europe|us|u\.s\.|indian|india|domestic|emerging|equity|stock|share|financial|broader)\s+(?:stock\s+|equity\s+)?markets?|(?:global|asian|european|us|indian|domestic|emerging|china|chinese|japan|japanese|hong kong)\s+(?:stocks|equities|shares)|stocks? market|market breadth)\b/;
   const firstClause = text.split(/\b(?:as|amid|after|despite|ahead of|on fears of)\b|[;:]/)[0];
   const namedStock = /\b(?:stock|share)\s+(?:price|prices|rallies|rally|surges?|jumps?|falls?|drops?|slips?|dips?|crash\w*|plunges?|tumbles?|gains?|loses?)\b|\bshares\s+(?:of|in)\b|\b(?:itc|paytm|senco(?: gold)?)\b/;
   if (namedStock.test(firstClause) && !aggregate.test(firstClause)) return false;
-  if (aggregate.test(firstClause)) return true;
+  if (aggregate.test(firstClause) || /\bmarket\s+(?:rall(?:y|ies)|fails?|falls?|surges?|crash\w*|sell-?off|gains?|slips?|jumps?|rebounds?)\b/.test(firstClause)) return true;
+  if (companyStory.test(text)) return false;
   const macro = /\b(rbi|reserve bank of india|repo rate|monetary policy|interest rates?|rate cuts?|rate hikes?|fed|federal reserve|fomc|ecb|boj|central banks?|fii|fiis|dii|diis|fpi|fpis|foreign (?:investors?|inflows?|outflows?)|institutional (?:flows?|buying|selling)|crude|brent|wti|oil prices?|rupee|usd\/?inr|dollar index|inflation|cpi|wpi|gdp|fiscal deficit|union budget|bond yields?|treasury yields?|geopolit\w*|war|ceasefire|sanctions?|tariffs?|trade (?:war|deal)|global sell-?off|global recession)\b/;
   return macro.test(firstClause);
 };
