@@ -17,6 +17,9 @@ const nav = SEO_ROUTES.filter((r) => !["/privacy", "/terms", "/contact"].include
   .join("\n          ")
 
 function body(route: SeoRoute) {
+  const related = route.related?.length
+    ? `<p style="margin-top:1.25rem;color:#a1a1aa;font-size:0.8rem">More in ${esc(route.relatedLabel ?? "this industry")}: ${route.related.map((l) => `<a style="color:#a1a1aa" href="${l.href}">${esc(l.label)}</a>`).join(" · ")}</p>`
+    : ""
   return `<div id="root">
       <div style="min-height:100vh;background:#0b0b0d;color:#f4f4f5;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center">
         <div style="font-size:1.1rem;font-weight:700;letter-spacing:-0.02em"><a style="color:inherit;text-decoration:none" href="/">StockSense</a></div>
@@ -25,6 +28,7 @@ function body(route: SeoRoute) {
         <nav style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:0.5rem 1.25rem;justify-content:center;font-size:0.85rem">
           ${nav}
         </nav>
+        ${related}
         <p style="margin-top:1.5rem;color:#a1a1aa;font-size:0.75rem"><a style="color:#a1a1aa" href="/about">About</a> · <a style="color:#a1a1aa" href="/privacy">Privacy</a> · <a style="color:#a1a1aa" href="/terms">Terms</a> · <a style="color:#a1a1aa" href="/contact">Contact</a></p>
       </div>
     </div>
