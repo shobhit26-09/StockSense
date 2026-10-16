@@ -1,4 +1,9 @@
-import { MARKET_CONSTITUENTS } from '@/data/marketConstituents';
+import universe from '@/data/nseUniverse.json';
+
+// nseUniverse.json: { asOf, source, u: [symbol, name, industry][] } - 755 NSE stocks
+// from the official niftyindices.com constituent lists.
+type UniverseRow = [string, string, string];
+const NSE_STOCKS = (universe as { u: UniverseRow[] }).u;
 
 export const SITE_URL = 'https://stocksensee.netlify.app';
 
@@ -8,6 +13,8 @@ export interface SeoRoute {
   description: string;
   h1: string;
   intro: string;
+  related?: { href: string; label: string }[];
+  relatedLabel?: string;
   changefreq: 'hourly' | 'daily' | 'weekly' | 'monthly';
   priority: string;
 }
@@ -127,14 +134,24 @@ export const SEO_ROUTES: SeoRoute[] = [
 
 export const stockPath = (symbol: string) => `/stock/${encodeURIComponent(symbol)}.NS`;
 
-export const STOCK_ROUTES: SeoRoute[] = MARKET_CONSTITUENTS.map((s) => ({
-  path: stockPath(s.symbol),
-  title: `${s.name} (${s.symbol}) Share Price & Analysis — StockSense`,
-  description: `Live price, chart, technical signals and fundamentals for ${s.name} (${s.symbol}) on NSE, with sector context from StockSense.`,
-  h1: `${s.name} (${s.symbol}) share price and analysis`,
-  intro: `${s.name} trades on NSE as ${s.symbol} and is part of the NIFTY 50 group of large companies in the ${s.sector} sector. Open the page for the live price, chart and technical signals.`,
-  changefreq: 'daily',
-  priority: '0.6',
-}));
+export const STOCK_ROUTES: SeoRoute[] = NSE_STOCKS.map(([symbol, name, industry], i) => {
+  // Up to 4 peer links from the same industry for internal linking (deterministic order).
+  const peers = NSE_STOCKS.filter(
+    ([s, , ind], j) => ind === industry && s !== symbol && j !== i,
+  )
+    .slice(0, 4)
+    .map(([s, n]) => ({ href: stockPath(s), label: n }));
+  return {
+    path: stockPath(symbol),
+    title: `${name} (${symbol}) Share Price & Analysis — StockSense`,
+    description: `Live price, chart, technical signals and sector context for ${name} (${symbol}) on NSE. Free on StockSense.`,
+    h1: `${name} (${symbol}) share price and analysis`,
+    intro: `${name} trades on NSE as ${symbol} in the ${industry} industry. Open the page for the live price, chart, technical signals and related news.`,
+    related: peers,
+    relatedLabel: industry,
+    changefreq: 'daily',
+    priority: '0.6',
+  };
+});
 
 export const ALL_SEO_ROUTES = [...SEO_ROUTES, ...STOCK_ROUTES];
