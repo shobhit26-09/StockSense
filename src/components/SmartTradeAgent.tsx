@@ -252,7 +252,7 @@ const SmartTradeAgent = () => {
                 const rr = Math.abs((t.target - t.entry) / (t.entry - t.stopLoss));
                 const slPct = ((t.stopLoss - t.entry) / t.entry) * 100;
                 const tgtPct = ((t.target - t.entry) / t.entry) * 100;
-                const ex = explainIdea(t, data.timestamp);
+                const ex = explainIdea(t, data.timestamp, data.session?.session);
                 return (
                   <div
                     key={i}
@@ -286,8 +286,8 @@ const SmartTradeAgent = () => {
                     <ul className="text-[11px] text-muted-foreground leading-relaxed list-disc pl-4 mb-1.5">
                       {ex.evidence.map((e, k) => <li key={k}>{e}</li>)}
                     </ul>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed"><span className="text-foreground/80">Trigger:</span> {ex.trigger}</p>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed"><span className="text-foreground/80">Invalidation:</span> {ex.invalidation}</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed"><span className="text-foreground/80">Scan:</span> {ex.trigger}</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed"><span className="text-foreground/80">Risk levels:</span> {ex.invalidation}</p>
                   </div>
                 );
               })}
