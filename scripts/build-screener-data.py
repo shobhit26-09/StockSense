@@ -2,7 +2,7 @@
 bhavcopy data (tejhq/indian-markets on Hugging Face). Same source and liquidity filter as
 build-sector-data.py. End-of-day data only. Usage: python3 scripts/build-screener-data.py
 (needs duckdb, pandas, numpy). No-op when the dataset has no newer trading day."""
-import json, os, datetime as dt
+import json, math, os, datetime as dt
 import duckdb, numpy as np, pandas as pd
 
 URL = "https://huggingface.co/datasets/tejhq/indian-markets/resolve/main/prices_adjusted/nse_2026.parquet"
@@ -50,8 +50,10 @@ for s in syms:
         "vx": round(float(turn[s].iloc[-1] / t20[s].iloc[-1]), 2),
         "tcr": round(float(t20[s].iloc[-1] / 1e7), 1),
     })
+# JSON has no NaN: drop any stock with a missing metric rather than write invalid JSON.
+rows = [r for r in rows if all(math.isfinite(v) for v in r.values() if isinstance(v, float))]
 json.dump({"asOf": str(asof.date()), "generatedAt": dt.datetime.utcnow().isoformat() + "Z",
            "source": "NSE bhavcopy via tejhq/indian-markets (end of day)",
            "sessions": int(len(close)), "universe": len(rows), "rows": rows},
-          open(OUT, "w"), separators=(",", ":"))
+          open(OUT, "w"), separators=(",", ":"), allow_nan=False)
 print("asof", asof.date(), "stocks", len(rows), "sessions", len(close))
