@@ -29,12 +29,15 @@ describe('radar helpers', () => {
     expect(e.evidence).toEqual(['Above 20/50 SMA, RSI 60', '1m 5%, vol 1.2x avg']);
     expect(e.trigger).toContain('Scanned');
     expect(e.trigger).toContain('22:39');
-    expect(e.trigger).toContain('closed');
+    expect(e.trigger).toContain('Quote time unknown');
+    expect(e.trigger).not.toMatch(/last close/);
     expect(e.trigger).not.toMatch(/Triggered at/);
     expect(e.trigger).toContain('does not confirm');
     expect(e.invalidation).toContain('not support or resistance');
     expect(e.invalidation).toContain('3.0% below');
-    expect(explainIdea(idea, '2026-11-03T05:00:00Z', 'live').trigger).toContain('not reported');
+    const withQuote = explainIdea({ ...idea, quoteTime: '2026-11-03T10:00:00Z' }, '2026-11-03T10:05:00Z', 'live');
+    expect(withQuote.trigger).toContain('Provider quote time');
+    expect(withQuote.trigger).toContain('15:30');
   });
   it('builds FII/DII from static table', () => {
     const r = fiiDiiFromStatic({ fii: { daily: [{ l: '2026-11-02', v: 10 }, { l: '2026-10-30', v: -5 }] }, dii: { daily: [{ l: '2026-11-02', v: 3 }, { l: '2026-10-30', v: 4 }] } });
