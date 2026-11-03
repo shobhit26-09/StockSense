@@ -12,7 +12,7 @@ interface TradeIdea {
   symbol: string; name: string;
   action: 'BUY' | 'SHORT';
   entry: number; stopLoss: number; target: number;
-  timeframe: string; confidence: number; catalyst?: string; reasoning: string;
+  timeframe: string; confidence: number; catalyst?: string; reasoning: string; quoteTime?: string | null;
 }
 interface NewsImpact { headline: string; source: string; impact: 'bullish' | 'bearish' | 'neutral'; affects: string; rationale: string; }
 interface AgentData {
