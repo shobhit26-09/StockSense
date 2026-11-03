@@ -101,7 +101,7 @@ export function enrichNews(items: RadarNews[], knownSymbols: string[] = []): Rad
   });
 }
 
-export const scoreLabel = (score: number) => `Setup score ${score}/100`;
+export const scoreLabel = (score: number) => `Score ${score}/100`;
 
 export interface IdeaExplanation {
   evidence: string[];
