@@ -124,7 +124,7 @@ async function fetchNews() {
       const xml = await r.text();
       const items = xml.split(/<item[\s>]/i).slice(1, 11);
       for (const item of items) {
-        const title = (item.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i)?.[1] || "").trim();
+        const title = (item.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || "").replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "").replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').trim();
         const link = (item.match(/<link>([\s\S]*?)<\/link>/i)?.[1] || "").trim();
         const pub = (item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i)?.[1] || "").trim();
         if (title) out.push({ title, source: f.source, published: pub, link });
@@ -274,8 +274,9 @@ function detectTickers(title: string, universe: string[]): string {
   if (hits.length) return hits.slice(0, 3).join(", ");
   if (/NIFTY|SENSEX/.test(t)) return "Indices";
   if (/RBI|RUPEE|INFLATION|CPI|GDP|FED/.test(t)) return "Macro";
-  if (/BANK/.test(t)) return "Banking";
-  if (/IT|TECH/.test(t)) return "IT";
+  if (/\b(BANKS?|LOANS?|NBFC|SBI)\b/.test(t)) return "Banking";
+  if (/\b(SEBI|PENALTY|TRIBUNAL)\b/.test(t)) return "Regulation";
+  if (/\b(INFOSYS|TCS|WIPRO|SOFTWARE|IT SERVICES|IT STOCKS)\b/.test(t)) return "IT";
   if (/AUTO|MOTOR/.test(t)) return "Auto";
   if (/PHARMA|CIPLA|SUN/.test(t)) return "Pharma";
   if (/OIL|CRUDE|ONGC/.test(t)) return "Energy";
@@ -346,7 +347,7 @@ function buildAnalysis(ctx: {
   // ----- Market summary tailored to session -----
   const breadthLine = advDec
     ? `${advDec.advances} adv vs ${advDec.declines} dec (ratio ${advDec.ratio.toFixed(2)}, ${advDec.ratio > 1.5 ? "strongly positive" : advDec.ratio > 1 ? "mildly positive" : advDec.ratio > 0.66 ? "mildly negative" : "broadly weak"})`
-    : "breadth pending";
+    : "market breadth unavailable";
   const indexLine = `NIFTY ${niftyPx.toFixed(0)} (${niftyChg >= 0 ? "+" : ""}${niftyChg.toFixed(2)}%), BANK NIFTY ${bnkPx.toFixed(0)} (${(bnkRes?.changePct ?? 0) >= 0 ? "+" : ""}${(bnkRes?.changePct ?? 0).toFixed(2)}%), India VIX ${vixVal.toFixed(2)}.`;
   // Today's actual leaders/laggards (by daily % change), not by composite score
   const byDay = [...scored].sort((a, b) => b.changePct - a.changePct);
@@ -355,10 +356,10 @@ function buildAnalysis(ctx: {
   const moveBand = `Expected 1-day band: NIFTY ±${expectedMove.niftyPct}% (${keyLevels.niftySupport}-${keyLevels.niftyResistance}), BNF ±${expectedMove.bankNiftyPct}% (${keyLevels.bankNiftySupport}-${keyLevels.bankNiftyResistance}).`;
 
   const sessionIntro: Record<string, string> = {
-    pre: `Pre-market read for ${sessionInfo.ist}. Yesterday closed with ${indexLine} Breadth ${breadthLine}.`,
-    live: `Live tape at ${sessionInfo.ist}. ${indexLine} Breadth ${breadthLine}.`,
-    post: `Post-market wrap for ${sessionInfo.ist}. ${indexLine} Breadth ${breadthLine}.`,
-    closed: `Markets closed. Last print: ${indexLine} Breadth ${breadthLine}.`,
+    pre: `Pre-market read for ${sessionInfo.ist}. Yesterday closed with ${indexLine} ${breadthLine.startsWith("market") ? "Market breadth is unavailable" : "Breadth " + breadthLine}.`,
+    live: `Live tape at ${sessionInfo.ist}. ${indexLine} ${breadthLine.startsWith("market") ? "Market breadth is unavailable" : "Breadth " + breadthLine}.`,
+    post: `Post-market wrap for ${sessionInfo.ist}. ${indexLine} ${breadthLine.startsWith("market") ? "Market breadth is unavailable" : "Breadth " + breadthLine}.`,
+    closed: `Markets closed. Last print: ${indexLine} ${breadthLine.startsWith("market") ? "Market breadth is unavailable" : "Breadth " + breadthLine}.`,
   };
   const sessionOutlook: Record<string, string> = {
     pre: `${moveBand} ${marketRegime === "bullish" ? "Bias: buy dips toward support" : marketRegime === "bearish" ? "Bias: sell rallies into resistance" : marketRegime === "volatile" ? "VIX elevated — cut size, widen stops" : "Range-bound — trade the band edges"}.`,
