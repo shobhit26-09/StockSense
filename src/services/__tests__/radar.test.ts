@@ -23,11 +23,18 @@ describe('radar helpers', () => {
     expect(classifyHeadline('Sebi levies Rs 40 lakh penalty on four entities')).toBe('bearish');
     expect(classifyHeadline('Motilal Oswal announces leadership rejig')).toBe('neutral');
   });
-  it('explains an idea with trigger and invalidation', () => {
-    const e = explainIdea({ symbol: 'X.NS', name: 'X', action: 'BUY', entry: 100, stopLoss: 95, target: 110, timeframe: 'swing', confidence: 80, reasoning: 'Above 20/50 SMA, RSI 60. 1m 5%, vol 1.2x avg. R:R 1:2.2 with 5% stop.' }, '2026-11-03T17:09:40Z');
+  it('explains an idea without claiming a trigger', () => {
+    const idea = { symbol: 'X.NS', name: 'X', action: 'BUY' as const, entry: 100, stopLoss: 97, target: 106.6, timeframe: 'swing', confidence: 80, reasoning: 'Above 20/50 SMA, RSI 60. 1m 5%, vol 1.2x avg. R:R 1:2.2 with 3% stop.' };
+    const e = explainIdea(idea, '2026-11-03T17:09:40Z', 'post');
     expect(e.evidence).toEqual(['Above 20/50 SMA, RSI 60', '1m 5%, vol 1.2x avg']);
+    expect(e.trigger).toContain('Scanned');
     expect(e.trigger).toContain('22:39');
-    expect(e.invalidation).toContain('below');
+    expect(e.trigger).toContain('closed');
+    expect(e.trigger).not.toMatch(/Triggered at/);
+    expect(e.trigger).toContain('does not confirm');
+    expect(e.invalidation).toContain('not support or resistance');
+    expect(e.invalidation).toContain('3.0% below');
+    expect(explainIdea(idea, '2026-11-03T05:00:00Z', 'live').trigger).toContain('not reported');
   });
   it('builds FII/DII from static table', () => {
     const r = fiiDiiFromStatic({ fii: { daily: [{ l: '2026-11-02', v: 10 }, { l: '2026-10-30', v: -5 }] }, dii: { daily: [{ l: '2026-11-02', v: 3 }, { l: '2026-10-30', v: 4 }] } });
