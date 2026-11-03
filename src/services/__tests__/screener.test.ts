@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { PRESETS, runPreset, dataAgeDays, type ScreenRow } from '../screener';
 
 const base: ScreenRow = { s: 'X', n: 'X Ltd', sec: 'IT', p: 100, r1: 0, r21: 0, r63: 0, hi: -20, rsi: 50, ma50: -1, vx: 1, tcr: 10 };
@@ -33,5 +34,10 @@ describe('screener presets', () => {
   it('computes data age', () => {
     expect(dataAgeDays('2026-11-02', new Date(2026, 10, 3))).toBe(1);
     expect(dataAgeDays('2026-11-02', new Date(2026, 10, 2))).toBe(0);
+  });
+  it('ships a strictly valid dataset with finite numbers', () => {
+    const d = JSON.parse(readFileSync('public/data/screener.json', 'utf8'));
+    expect(d.rows.length).toBeGreaterThan(300);
+    for (const r of d.rows) for (const k of ['p', 'r1', 'r21', 'r63', 'hi', 'rsi', 'ma50', 'vx', 'tcr']) expect(Number.isFinite(r[k])).toBe(true);
   });
 });
