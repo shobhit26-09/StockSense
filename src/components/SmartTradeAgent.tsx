@@ -118,7 +118,7 @@ const SmartTradeAgent = () => {
     closed: 'Market Recap',
   };
 
-  const fmtCr = (v: number) => `${v >= 0 ? '+' : ''}₹${Math.abs(v).toFixed(0)} Cr`;
+  const fmtCr = (v: number) => `${v >= 0 ? '+' : '-'}₹${Math.abs(v).toFixed(0)} Cr`;
   const flowTone = (v: number) => (v >= 0 ? 'text-success' : 'text-destructive');
 
   return (
