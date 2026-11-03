@@ -100,6 +100,7 @@ async function fetchQuoteFull(symbol: string) {
     const dayRangePos = dayHigh > dayLow ? (price - dayLow) / (dayHigh - dayLow) : 0.5;
     return {
       symbol, price, change, changePct, high52, low52,
+      quoteTime: typeof meta.regularMarketTime === "number" ? new Date(meta.regularMarketTime * 1000).toISOString() : null,
       pctFrom52H: ((price - high52) / high52) * 100,
       pctFrom52L: ((price - low52) / low52) * 100,
       sma20, sma50, volRatio, rsi: Math.round(rsi),
@@ -408,6 +409,7 @@ function buildAnalysis(ctx: {
       confidence,
       catalyst,
       reasoning,
+      quoteTime: q.quoteTime ?? null,
     };
   };
 
