@@ -1,5 +1,6 @@
 name: Refresh sector and FII/DII data
 
+# Also rebuilds the screener presets dataset.
 # Runs on weekdays after the NSE close (17:49, 21:19 and 22:49 IST) to refresh sector data and FII/DII history.
 # On NSE holidays, or when the dataset has no new trading day yet, the script exits
 # without changes and nothing is committed. Free on public repos (standard runners).
@@ -33,6 +34,8 @@ jobs:
         run: python3 scripts/build-sector-data.py
       - name: Build FII/DII data
         run: python3 scripts/build-fii-dii.py
+      - name: Build screener data
+        run: python3 scripts/build-screener-data.py
       - name: Commit if changed
         run: |
           if git diff --quiet -- public/data; then

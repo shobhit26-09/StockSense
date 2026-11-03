@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Brain, RefreshCw, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { enrichNews, explainIdea, fiiDiiFromStatic, cleanSummary, dataGaps, scoreLabel, RADAR_SCAN_SIZE, SEARCH_UNIVERSE_SIZE } from '@/services/radar';
 
 interface TradeIdea {
   symbol: string; name: string;
   action: 'BUY' | 'SHORT';
   entry: number; stopLoss: number; target: number;
-  timeframe: string; confidence: number; catalyst?: string; reasoning: string;
+  timeframe: string; confidence: number; catalyst?: string; reasoning: string; quoteTime?: string | null;
 }
 interface NewsImpact { headline: string; source: string; impact: 'bullish' | 'bearish' | 'neutral'; affects: string; rationale: string; }
 interface AgentData {
@@ -33,6 +34,29 @@ interface AgentData {
   fiiDii?: { date: string; fiiNet: number; diiNet: number; last5: { date: string; fii: number; dii: number }[] } | null;
   breadth?: { advances: number; declines: number; unchanged: number; ratio: number; universe: string } | null;
   timestamp: string;
+  fiiFallback?: boolean;
+}
+
+// Clean and enrich the edge-function response: fix news tags, fill missing
+// FII/DII from the site's own dated table, and label the source of each input.
+async function enrichResponse(res: AgentData): Promise<AgentData> {
+  if (!res || res.error) return res;
+  let fiiDii = res.fiiDii ?? null;
+  let fiiFallback = false;
+  if (!fiiDii) {
+    try {
+      const r = await fetch('/data/fii-dii.json', { cache: 'no-cache' });
+      if (r.ok) { fiiDii = fiiDiiFromStatic(await r.json()); fiiFallback = !!fiiDii; }
+    } catch { /* keep null */ }
+  }
+  const symbols = (res.tradeIdeas || []).map((t) => t.symbol);
+  return {
+    ...res,
+    fiiDii,
+    fiiFallback,
+    marketSummary: cleanSummary(res.marketSummary || '', !!fiiDii),
+    newsImpact: enrichNews(res.newsImpact || [], symbols),
+  } as AgentData;
 }
 
 const SmartTradeAgent = () => {
@@ -53,7 +77,7 @@ const SmartTradeAgent = () => {
     try {
       const { data: res, error } = await supabase.functions.invoke('smart-trade-agent', { body: {} });
       if (error) throw error;
-      setData(res);
+      setData(await enrichResponse(res));
       if (res?.error) {
         toast({ title: 'Trade agent paused', description: res.error });
       }
@@ -94,7 +118,7 @@ const SmartTradeAgent = () => {
     closed: 'Market Recap',
   };
 
-  const fmtCr = (v: number) => `${v >= 0 ? '+' : ''}₹${Math.abs(v).toFixed(0)} Cr`;
+  const fmtCr = (v: number) => `${v >= 0 ? '+' : '-'}₹${Math.abs(v).toFixed(0)} Cr`;
   const flowTone = (v: number) => (v >= 0 ? 'text-success' : 'text-destructive');
 
   return (
@@ -121,6 +145,13 @@ const SmartTradeAgent = () => {
           {loading ? 'Scanning' : 'Refresh'}
         </Button>
       </div>
+
+      {data && !data.error && (
+        <p className="mb-3 text-[10px] text-muted-foreground leading-relaxed">
+          Scans {RADAR_SCAN_SIZE} large and mid-cap stocks, not all {SEARCH_UNIVERSE_SIZE}. Rule-based screen on delayed free data, not a prediction or advice.
+          {dataGaps({ breadth: data.breadth, fiiDii: data.fiiDii }).map((g) => ` ${g}`).join('')}
+        </p>
+      )}
 
       {!data && (
         <div className="py-10 text-center text-xs text-muted-foreground">
@@ -186,14 +217,14 @@ const SmartTradeAgent = () => {
             <div className="mb-4 pb-4 border-b border-border/40">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                  Institutional Flows · {data.fiiDii.date}
+                  Institutional Flows · {data.fiiDii.date}{data.fiiFallback ? ' · daily table' : ''}
                 </span>
                 <div className="text-[11px] font-mono flex gap-4">
                   <span>FII <span className={flowTone(data.fiiDii.fiiNet)}>{fmtCr(data.fiiDii.fiiNet)}</span></span>
                   <span>DII <span className={flowTone(data.fiiDii.diiNet)}>{fmtCr(data.fiiDii.diiNet)}</span></span>
                 </div>
               </div>
-              {data.flowsCommentary && (
+              {data.flowsCommentary && !data.fiiFallback && (
                 <p className="text-[11px] text-muted-foreground leading-relaxed">{data.flowsCommentary}</p>
               )}
               <div className="mt-2 flex gap-1.5 overflow-x-auto">
@@ -221,6 +252,7 @@ const SmartTradeAgent = () => {
                 const rr = Math.abs((t.target - t.entry) / (t.entry - t.stopLoss));
                 const slPct = ((t.stopLoss - t.entry) / t.entry) * 100;
                 const tgtPct = ((t.target - t.entry) / t.entry) * 100;
+                const ex = explainIdea(t, data.timestamp, data.session?.session);
                 return (
                   <div
                     key={i}
@@ -236,7 +268,7 @@ const SmartTradeAgent = () => {
                         <span className="text-[10px] text-muted-foreground capitalize">· {t.timeframe}</span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] font-mono">
-                        <span className="text-muted-foreground">{t.confidence}%</span>
+                        <span className="text-muted-foreground" title="Heuristic rank from trend, momentum and volume rules. Not a measured win rate.">{scoreLabel(t.confidence)}</span>
                         <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </div>
@@ -251,7 +283,11 @@ const SmartTradeAgent = () => {
                     {t.catalyst && (
                       <p className="text-[10px] uppercase tracking-wider text-primary/80 font-semibold mb-1">{t.catalyst}</p>
                     )}
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">{t.reasoning}</p>
+                    <ul className="text-[11px] text-muted-foreground leading-relaxed list-disc pl-4 mb-1.5">
+                      {ex.evidence.map((e, k) => <li key={k}>{e}</li>)}
+                    </ul>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed"><span className="text-foreground/80">Scan:</span> {ex.trigger}</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed"><span className="text-foreground/80">Risk levels:</span> {ex.invalidation}</p>
                   </div>
                 );
               })}

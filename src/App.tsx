@@ -17,6 +17,7 @@ const Index = lazy(() => import('./pages/Index'));
 const StockAnalysis = lazy(() => import('./pages/StockAnalysis'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AgentPage = lazy(() => import('./pages/AgentPage'));
+const ScreenerPage = lazy(() => import('./pages/ScreenerPage'));
 const FiiDiiPage = lazy(() => import('./pages/FiiDiiPage'));
 const SectorPage = lazy(() => import('./pages/SectorPage'));
 const HeatmapPage = lazy(() => import('./pages/HeatmapPage'));
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/stock/:symbol" element={<StockAnalysis />} />
               <Route path="/agent" element={<AgentPage />} />
+              <Route path="/screener" element={<ScreenerPage />} />
               <Route path="/sectors" element={<SectorPage />} />
               <Route path="/heatmap" element={<HeatmapPage />} />
               <Route path="/fii-dii" element={<FiiDiiPage />} />
