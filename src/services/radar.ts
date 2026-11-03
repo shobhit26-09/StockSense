@@ -113,8 +113,11 @@ const istTime = (iso: string) =>
     timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
   });
 
-/** Turn the agent's terse reasoning into discrete evidence, plus an explicit trigger and invalidation. */
-export function explainIdea(t: RadarTradeIdea, timestamp: string): IdeaExplanation {
+/**
+ * Turn the agent's terse reasoning into discrete evidence, plus honest scan-time,
+ * quote and risk-level lines. The feed gives no quote timestamp, so we say so.
+ */
+export function explainIdea(t: RadarTradeIdea, timestamp: string, session?: string): IdeaExplanation {
   const evidence = t.reasoning
     .split(/\.\s+/)
     .map((s) => s.replace(/\.$/, '').trim())
@@ -122,10 +125,16 @@ export function explainIdea(t: RadarTradeIdea, timestamp: string): IdeaExplanati
   const long = t.action === 'BUY';
   const fmt = (v: number) => `\u20B9${v.toFixed(2)}`;
   const asOf = istTime(timestamp);
-  const trigger = `Triggered at ${asOf} IST when price was ${fmt(t.entry)}. Still valid only while it holds near ${fmt(t.entry)}; chasing far past it changes the risk.`;
-  const invalidation = long
-    ? `Idea is wrong if price trades below ${fmt(t.stopLoss)}. Target ${fmt(t.target)}.`
-    : `Idea is wrong if price trades above ${fmt(t.stopLoss)}. Target ${fmt(t.target)}.`;
+  const open = session === 'live';
+  const quote = open
+    ? 'Quote time is not reported by the free feed; it is delayed.'
+    : 'Market is closed, so this is the last close or last trade, not a live price.';
+  const trigger = `Scanned ${asOf} IST. Reference price ${fmt(t.entry)}. ${quote} The scan does not confirm that a breakout happened or that the price held.`;
+  const slPct = Math.abs((t.stopLoss - t.entry) / t.entry) * 100;
+  const tgtPct = Math.abs((t.target - t.entry) / t.entry) * 100;
+  const invalidation =
+    `Stop ${fmt(t.stopLoss)} (${slPct.toFixed(1)}% ${long ? 'below' : 'above'} the reference price) and target ${fmt(t.target)} (${tgtPct.toFixed(1)}%, about ${(tgtPct / slPct).toFixed(1)}x the stop). ` +
+    'Both are fixed percentages from recent daily volatility, not support or resistance levels. Treat them as a sizing aid, not a verified invalidation.';
   return { evidence, trigger, invalidation, asOf };
 }
 
