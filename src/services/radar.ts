@@ -8,6 +8,8 @@ export interface RadarTradeIdea {
   action: 'BUY' | 'SHORT';
   entry: number; stopLoss: number; target: number;
   timeframe: string; confidence: number; catalyst?: string; reasoning: string;
+  /** Provider quote timestamp (ISO). Absent on older edge-function versions. */
+  quoteTime?: string | null;
 }
 export interface RadarNews {
   headline: string; source: string;
@@ -125,10 +127,9 @@ export function explainIdea(t: RadarTradeIdea, timestamp: string, session?: stri
   const long = t.action === 'BUY';
   const fmt = (v: number) => `\u20B9${v.toFixed(2)}`;
   const asOf = istTime(timestamp);
-  const open = session === 'live';
-  const quote = open
-    ? 'Quote time is not reported by the free feed; it is delayed.'
-    : 'Market is closed, so this is the last close or last trade, not a live price.';
+  const quote = t.quoteTime
+    ? `Provider quote time ${istTime(t.quoteTime)} IST${session === 'live' ? ', delayed' : ''}.`
+    : 'Quote time unknown: the free feed does not report it, and it may be delayed.';
   const trigger = `Scanned ${asOf} IST. Reference price ${fmt(t.entry)}. ${quote} The scan does not confirm that a breakout happened or that the price held.`;
   const slPct = Math.abs((t.stopLoss - t.entry) / t.entry) * 100;
   const tgtPct = Math.abs((t.target - t.entry) / t.entry) * 100;
