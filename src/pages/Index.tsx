@@ -41,6 +41,7 @@ const Index = () => (
       <div className="max-w-[1200px] mx-auto px-5 lg:px-8">
         <ShowcaseNotice />
         <MarketHero />
+        <Link to="/research" className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground"><span><span className="block text-xs font-semibold">Your research workspace</span><span className="mt-1 block text-xs text-muted-foreground">A saved watchlist, source-aware quotes and a clear next question.</span></span><ArrowRight className="h-4 w-4 shrink-0" /></Link>
 
         <div className="mt-5"><MarketSentiment /></div>
 
