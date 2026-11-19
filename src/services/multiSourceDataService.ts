@@ -86,7 +86,7 @@ export const fetchQuoteRacing = async (symbol: string, _timeout?: number): Promi
         changePercent: quoteData.changePercent,
         previousClose: quoteData.previousClose,
         volume: quoteData.volume,
-        source: quoteData.source || 'yahoo',
+        source: quoteData.source || 'unknown',
         timestamp: Date.now(),
       };
       quoteCache.set(symbol, { quote: result, timestamp: Date.now() });
@@ -156,7 +156,7 @@ export const fetchMultipleQuotesRacing = async (
           changePercent: qd.changePercent,
           previousClose: qd.previousClose,
           volume: qd.volume,
-          source: qd.source || 'yahoo',
+          source: qd.source || 'unknown',
           timestamp: Date.now(),
         };
         quoteCache.set(originalSymbol, { quote: result, timestamp: Date.now() });
