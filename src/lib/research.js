@@ -79,3 +79,9 @@ export function restoreResearchBackup(storage, backup, watchlistKey) {
     return rollbackFailed ? 'Restore could not be saved completely. Your imported notebook is open here. Download it before leaving, and check saved data before reloading.' : 'Restore is open here but could not be saved. Previous saved data was preserved. Download this notebook before leaving.';
   }
 }
+
+export function archivedResearch(symbols, notes, query = '') {
+  const watched = new Set(symbols);
+  const needle = query.trim().toUpperCase();
+  return Object.keys(notes).filter(symbol => !watched.has(symbol) && symbol.includes(needle)).sort();
+}
