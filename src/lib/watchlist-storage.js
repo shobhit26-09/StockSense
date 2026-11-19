@@ -1,6 +1,7 @@
 export const WATCHLIST_KEY = 'stocksense_watchlist_v2';
 export const WATCHLIST_EVENT = 'stocksense:watchlist-change';
-export const DEFAULT_WATCHLIST = ['RELIANCE.NS', 'HDFCBANK.NS', 'TCS.NS', 'INFY.NS', 'ICICIBANK.NS', 'TATAMOTORS.NS'];
+// An empty first-use list is honest. Only explicit choices become saved stocks.
+export const DEFAULT_WATCHLIST = [];
 const LEGACY_KEYS = ['sf_watchlist_v1', 'stockWatchlist'];
 export const normalizeSymbol = value => {
   if (typeof value !== 'string') return '';
