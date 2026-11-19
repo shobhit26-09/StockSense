@@ -8,15 +8,7 @@ import { fetchMultipleQuotesRacing, type StockQuote } from '@/services/multiSour
 import { fetchHistory, type HistoryRange, type HistorySeries } from '@/services/historyService';
 import { correctIndexQuote } from '@/services/indexQuote';
 
-const sessionInfo = (d: Date) => {
-  const day = d.getDay();
-  const m = d.getHours() * 60 + d.getMinutes();
-  if (day === 0 || day === 6) return { label: 'Markets closed · Weekend', tone: 'muted' as const };
-  if (m >= 540 && m < 555) return { label: 'Pre-market', tone: 'warning' as const };
-  if (m >= 555 && m < 930) return { label: 'Live · NSE · BSE', tone: 'success' as const };
-  if (m >= 930 && m < 960) return { label: 'Post-market', tone: 'warning' as const };
-  return { label: 'Markets closed', tone: 'muted' as const };
-};
+import { scheduledSession as sessionInfo } from '@/lib/research.js';
 
 const RANGES: { key: HistoryRange; label: string }[] = [
   { key: '1d', label: '1D' },
