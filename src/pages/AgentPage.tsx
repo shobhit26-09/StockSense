@@ -6,8 +6,8 @@ import { Link } from 'react-router-dom';
 const AgentPage = () => (
   <PageShell
     eyebrow="Intelligence"
-    title="Algorithmic trade agent"
-    sub="Heuristic momentum scanner over live NSE quotes, FII/DII flows, breadth and ATR-based risk. Every signal is auditable — no black-box models."
+    title="Rule-based idea scanner"
+    sub="A research scanner using heuristic rules and delayed free data. It does not connect to a broker or place orders. Verify every input before acting."
   >
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       <div className="lg:col-span-8"><SmartTradeAgent /></div>
