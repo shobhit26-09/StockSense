@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { isSourcedQuote, requestTimeout } from '@/lib/quote-integrity.js';
 
 export interface StockQuote {
   symbol: string;
@@ -71,12 +72,13 @@ export const fetchQuoteRacing = async (symbol: string, _timeout?: number): Promi
     const yahooSymbol = getYahooSymbol(symbol);
     const { data, error } = await supabase.functions.invoke('fetch-market-data', {
       body: { type: 'batch-quotes', symbols: [yahooSymbol] },
+      timeout: requestTimeout(_timeout),
     });
 
     if (error) throw error;
 
     const quoteData = data?.[yahooSymbol];
-    if (quoteData && quoteData.price && Number.isFinite(quoteData.change) && Number.isFinite(quoteData.changePercent) && Number.isFinite(quoteData.previousClose)) {
+    if (isSourcedQuote(quoteData)) {
       const mapping = INDEX_MAPPINGS[symbol];
       const result: StockQuote = {
         symbol,
@@ -139,6 +141,7 @@ export const fetchMultipleQuotesRacing = async (
   try {
     const { data, error } = await supabase.functions.invoke('fetch-market-data', {
       body: { type: 'batch-quotes', symbols: uncachedSymbols },
+      timeout: requestTimeout(_timeout),
     });
 
     if (error) throw error;
@@ -146,7 +149,7 @@ export const fetchMultipleQuotesRacing = async (
     for (const [yahooSym, quoteData] of Object.entries(data || {})) {
       const originalSymbol = yahooToOriginal.get(yahooSym) || yahooSym;
       const qd = quoteData as any;
-      if (qd && qd.price && Number.isFinite(qd.change) && Number.isFinite(qd.changePercent) && Number.isFinite(qd.previousClose)) {
+      if (yahooToOriginal.has(yahooSym) && isSourcedQuote(qd)) {
         const mapping = INDEX_MAPPINGS[originalSymbol];
         const result: StockQuote = {
           symbol: originalSymbol,
