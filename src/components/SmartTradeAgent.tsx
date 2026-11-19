@@ -127,7 +127,7 @@ const SmartTradeAgent = () => {
         <div className="flex items-center gap-2.5 min-w-0">
           <Brain className="w-4 h-4 text-primary shrink-0" />
           <h3 className="text-sm font-semibold tracking-tight text-foreground truncate">
-            Smart Trade Agent
+            Idea scanner
             {data?.session && (
               <span className="ml-2 text-[10px] font-normal text-muted-foreground uppercase tracking-wider">
                 · {sessionTitle[data.session.session]}
@@ -156,8 +156,8 @@ const SmartTradeAgent = () => {
       {!data && (
         <div className="py-10 text-center text-xs text-muted-foreground">
           {isSupabaseConfigured
-            ? (loading ? 'Analyzing live market…' : 'Tap refresh to scan.')
-            : 'Smart Trade Agent is disabled in this demo (AI features off).'}
+            ? (loading ? 'Reading available market data…' : 'Tap refresh to scan.')
+            : 'Scanner unavailable without a configured backend. Use the research workspace to keep your own watchlist and notes.'}
         </div>
       )}
 
