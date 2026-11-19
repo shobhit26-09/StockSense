@@ -42,6 +42,7 @@ export const intradaySessionDomain = (timestamp: number): [number, number] => {
 const MarketHero = () => {
   const [now, setNow] = useState(new Date());
   const [quotes, setQuotes] = useState<Map<string, StockQuote>>(new Map());
+  const [quotesLoaded, setQuotesLoaded] = useState(false);
   const [range, setRange] = useState<HistoryRange>('6mo');
   const [series, setSeries] = useState<HistorySeries | null>(null);
   const [sparks, setSparks] = useState<Record<string, HistorySeries>>({});
@@ -54,10 +55,11 @@ const MarketHero = () => {
   }, []);
 
   useEffect(() => {
-    const load = async () => setQuotes(await fetchMultipleQuotesRacing(INDICES.map((t) => t.symbol), 8000));
+    let alive = true;
+    const load = async () => { const next = await fetchMultipleQuotesRacing(INDICES.map((t) => t.symbol), 8000); if (alive) { setQuotes(next); setQuotesLoaded(true); } };
     load();
     const t = setInterval(load, 20000);
-    return () => clearInterval(t);
+    return () => { alive = false; clearInterval(t); };
   }, []);
 
   useEffect(() => {
@@ -89,7 +91,7 @@ const MarketHero = () => {
     ? correctIndexQuote(currentQuote, sparks[selected.symbol], now.getTime()) : currentQuote?.source === 'backup' ? currentQuote : undefined;
 
   const chart = useMemo(() => {
-    if (!series) return null;
+    if (!series || series.source !== 'yahoo') return null;
     const pts = series.points.map((p) => ({ t: p.t, c: p.c }));
     if (nifty && series.source === 'yahoo') {
       const last = pts[pts.length - 1];
@@ -117,30 +119,30 @@ const MarketHero = () => {
       </div>
       <div aria-hidden className="hero-grid pointer-events-none absolute inset-0" />
 
-      <div className="relative grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
-        <div className="flex flex-col justify-center p-7 pb-4 pt-10 md:p-12 lg:py-14 lg:pl-14 lg:pr-6">
+      <div className="relative grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
+        <div className="flex min-w-0 flex-col justify-center p-7 pb-4 pt-10 md:p-12 lg:py-14 lg:pl-14 lg:pr-6">
           <div className="mb-6 inline-flex w-fit items-center gap-2.5 rounded-full border border-border bg-background/50 px-3.5 py-1.5 backdrop-blur-xl">
             <span className={`h-1.5 w-1.5 rounded-full ${s.tone === 'success' ? 'bg-success live-indicator' : s.tone === 'warning' ? 'bg-warning' : 'bg-muted-foreground/60'}`} />
             <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{s.label}</span>
             <span className="h-3 w-px bg-border" />
             <span className="font-mono text-[11px] text-muted-foreground">
-              {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })} IST
+              {now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false })} IST
             </span>
           </div>
 
-          <h1 className="font-display text-[42px] font-bold leading-[1] tracking-[-0.035em] text-foreground sm:text-6xl lg:text-[58px] xl:text-[60px]">
+          <h1 className="font-display text-[42px] font-bold leading-[1] tracking-[-0.035em] text-foreground sm:text-6xl lg:text-[46px] xl:text-[52px]">
             Your market,<br />
-            <span className="whitespace-nowrap">in <span className="text-brand-gradient">one clear view.</span></span>
+            <span className="">in <span className="text-brand-gradient">one clear view.</span></span>
           </h1>
 
           <p className="mt-6 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-            Live NSE and BSE quotes, a market map of India's largest companies, sector outlooks and
+            Source-aware NSE and BSE quotes, a market map of India's largest companies, sector outlooks and
             macro events, on one screen.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild variant="premium" size="default" className="rounded-full px-5">
-              <Link to="/agent">Open trade agent <ArrowRight className="h-3.5 w-3.5" /></Link>
+              <Link to="/research">Start your research <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
             <Button asChild variant="outline" size="default" className="rounded-full bg-background/40 px-5 backdrop-blur-xl">
               <Link to="/heatmap">See the heatmap</Link>
@@ -150,7 +152,7 @@ const MarketHero = () => {
           <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-border/70 pt-6">
             {[
               ['NSE · BSE', 'Exchanges'],
-              ['60s', 'Refresh'],
+              ['May lag', 'Free feeds'],
               ['Free', 'No sign-up'],
             ].map(([v, k]) => (
               <div key={k}>
@@ -168,12 +170,12 @@ const MarketHero = () => {
                 <div className="flex items-center gap-2">
                   <span key={selected.symbol} className="hero-swap text-[12px] font-semibold uppercase tracking-[0.14em] text-white/55">{selected.label}</span>
                   {(series?.source === 'sample' || nifty?.source === 'backup') && (
-                    <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">Sample data · feed offline</span>
+                    <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">History unavailable</span>
                   )}
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <span className="font-display text-[40px] font-semibold leading-none tracking-tight text-white tabular-nums">
-                    {nifty ? fmt(nifty.price) : <span className="shimmer inline-block h-9 w-44 rounded-lg align-middle" />}
+                    {nifty ? fmt(nifty.price) : quotesLoaded ? <span className="text-lg text-white/60">Quote unavailable</span> : <span className="shimmer inline-block h-9 w-44 rounded-lg align-middle" />}
                   </span>
                   {nifty && nifty.source === 'yahoo' && Number.isFinite(nifty.changePercent) && (
                     <span className={`inline-flex items-center gap-0.5 font-mono text-sm font-medium ${nifty.changePercent >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -242,7 +244,7 @@ const MarketHero = () => {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="shimmer h-full w-full rounded-2xl" />
+                <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 p-5 text-center text-sm text-white/50">{series ? 'Market history unavailable. No sample chart is shown.' : 'Loading market history…'}</div>
               )}
             </div>
 
@@ -273,16 +275,16 @@ const MarketHero = () => {
                     </div>
                     <div className="mt-1 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
                       <span className="font-mono text-[15px] text-white tabular-nums">
-                        {q ? fmt(q.price) : <span className="shimmer inline-block h-4 w-20 rounded" />}
+                        {q ? fmt(q.price) : quotesLoaded ? <span className="text-xs text-white/50">Unavailable</span> : <span className="shimmer inline-block h-4 w-20 rounded" />}
                       </span>
-                      {sp && <Sparkline values={sp.points.map((p) => p.c)} positive={t.invert ? !trendUp : trendUp} width={72} height={26} className="max-sm:h-[22px] max-sm:w-full" />}
+                      {sp?.source === 'yahoo' && <Sparkline values={sp.points.map((p) => p.c)} positive={t.invert ? !trendUp : trendUp} width={72} height={26} className="max-sm:h-[22px] max-sm:w-full" />}
                     </div>
                   </button>
                 );
               })}
             </div>
-            <div className="mt-3 flex items-center justify-between text-[10.5px] text-white/35">
-              <span>Tap an index to chart it · {range === '1d' ? 'Intraday · 5-min' : 'Daily closes'} · Yahoo Finance{Object.values(sparks).some((x) => x.source === 'sample') ? ' · some sparklines are sample data' : ''}</span>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-white/35">
+              <span>Tap an index to chart it · {range === '1d' ? 'Intraday · 5-min' : 'Daily closes'} · {series?.source === 'sample' ? 'Market history unavailable' : 'Yahoo Finance, may be delayed'}</span>
               <Link to="/macro" className="inline-flex items-center gap-1 font-semibold text-white/55 transition-colors hover:text-white">
                 Global context <ArrowRight className="h-3 w-3" />
               </Link>
