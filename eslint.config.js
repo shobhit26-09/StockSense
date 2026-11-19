@@ -14,7 +14,7 @@ export default tseslint.config(
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
-    rules: { ...js.configs.recommended.rules },
+    rules: { ...js.configs.recommended.rules, "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z]" }] },
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
