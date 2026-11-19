@@ -14,6 +14,7 @@ import RouteSeo from '@/components/RouteSeo';
 import SiteFooter from '@/components/SiteFooter';
 
 const Index = lazy(() => import('./pages/Index'));
+const ResearchPage = lazy(() => import('./pages/ResearchPage.jsx'));
 const StockAnalysis = lazy(() => import('./pages/StockAnalysis'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AgentPage = lazy(() => import('./pages/AgentPage'));
@@ -54,6 +55,7 @@ const App = () => (
           <Suspense fallback={<PremiumLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/research" element={<ResearchPage />} />
               <Route path="/stock/:symbol" element={<StockAnalysis />} />
               <Route path="/agent" element={<AgentPage />} />
               <Route path="/screener" element={<ScreenerPage />} />
