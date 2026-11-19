@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Star, Plus, X } from 'lucide-react';
 import { fetchMultipleQuotesRacing } from '@/services/multiSourceDataService';
 import { loadWatchlistState, normalizeSymbol, saveWatchlist, subscribeWatchlist } from '@/lib/watchlist';
@@ -23,7 +23,7 @@ const QuickWatchlist = () => {
 
   useEffect(() => {
     fetchAll();
-    const t = setInterval(fetchAll, 12000);
+    const t = setInterval(fetchAll, 60000);
     return () => clearInterval(t);
   }, [fetchAll]);
 
@@ -57,6 +57,7 @@ const QuickWatchlist = () => {
         <span className="text-[10px] font-mono text-muted-foreground">{list.length}</span>
       </div>
 
+      <Link to="/research" className="text-xs text-primary mb-3 underline">Open research workspace</Link>
       <div className="flex gap-1 mb-3">
         <input
           value={input}
