@@ -16,6 +16,7 @@ import StockSenseMark from './StockSenseMark';
 
 const NAV_LINKS = [
   { to: '/', label: 'Dashboard' },
+  { to: '/research', label: 'Research' },
   { to: '/fii-dii', label: 'FII / DII' },
   { to: '/sectors', label: 'Sectors' },
   { to: '/heatmap', label: 'Heatmap' },
@@ -96,7 +97,7 @@ const PremiumNavbar = () => {
             <Wordmark onClick={() => navigate('/')} />
 
             {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-4">
               {NAV_LINKS.map((l) => (
                 <button
                   key={l.to}
@@ -112,19 +113,19 @@ const PremiumNavbar = () => {
 
           {/* Right */}
           <div className="flex items-center gap-2.5">
-            <div ref={wrapRef} className="hidden sm:block relative">
-              <form onSubmit={submit} className="glass-control flex items-center gap-2 px-3 h-9 rounded-full focus-within:ring-2 focus-within:ring-primary/30 transition-shadow w-64 xl:w-72">
+            <div ref={wrapRef} className="hidden xl:block relative">
+              <form onSubmit={submit} className="glass-control flex items-center gap-2 px-3 h-9 rounded-full focus-within:ring-2 focus-within:ring-primary/30 transition-shadow w-52 xl:w-60">
                 <Search className="w-3.5 h-3.5 text-muted-foreground" />
                 <input
                   value={q}
                   onChange={(e) => { setQ(e.target.value); setOpen(true); setActive(0); }}
                   onFocus={() => q && setOpen(true)}
                   onKeyDown={onKey}
-                  placeholder="Search symbols, sectors, news…"
-                  className="bg-transparent outline-none text-[13px] flex-1 text-foreground placeholder:text-muted-foreground"
+                  placeholder="Search company or ticker"
+                  className="bg-transparent outline-none text-[13px] flex-1 min-w-0 text-foreground placeholder:text-muted-foreground"
                   autoComplete="off"
                 />
-                <kbd className="hidden lg:inline text-[10px] font-mono text-muted-foreground border border-border rounded-md px-1.5 py-0.5">⌘K</kbd>
+
               </form>
 
               {open && suggestions.length > 0 && (
@@ -162,7 +163,7 @@ const PremiumNavbar = () => {
 
             <button
               onClick={() => navigate('/agent')}
-              className="hidden md:inline-flex items-center h-9 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-all hover:bg-primary-light"
+              className="hidden 2xl:inline-flex items-center h-9 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-all hover:bg-primary-light"
             >
               Trade agent
             </button>
@@ -234,7 +235,7 @@ const PremiumNavbar = () => {
                   <button
                     onClick={() => { setMenuOpen(false); navigate('/agent'); }}
                     className="mt-3 inline-flex h-11 items-center justify-center rounded-xl bg-primary font-display text-[15px] font-semibold text-primary-foreground"
-                   
+
                   >
                     Open trade agent
                   </button>
