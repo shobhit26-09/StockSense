@@ -2,14 +2,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Plus, X } from 'lucide-react';
 import { fetchMultipleQuotesRacing } from '@/services/multiSourceDataService';
-import { loadWatchlist, normalizeSymbol, saveWatchlist } from '@/lib/watchlist';
+import { loadWatchlistState, normalizeSymbol, saveWatchlist, subscribeWatchlist } from '@/lib/watchlist';
 
 
 
 
 const QuickWatchlist = () => {
   const navigate = useNavigate();
-  const [list, setList] = useState<string[]>(() => loadWatchlist());
+  const [initial] = useState(() => loadWatchlistState());
+  const [list, setList] = useState<string[]>(initial.symbols);
+  const [saveError, setSaveError] = useState(initial.error);
   const [data, setData] = useState<Map<string, any>>(new Map());
   const [input, setInput] = useState('');
 
@@ -25,18 +27,25 @@ const QuickWatchlist = () => {
     return () => clearInterval(t);
   }, [fetchAll]);
 
-  useEffect(() => {
-    saveWatchlist(list);
-  }, [list]);
+  useEffect(() => subscribeWatchlist(() => {
+    const state = loadWatchlistState();
+    setList(state.symbols); setSaveError(state.error);
+  }), []);
+
+  const update = (next: string[]) => {
+    setList(next.slice(0, 30));
+    try { saveWatchlist(next); setSaveError(''); }
+    catch { setSaveError('Changes are not saved. Keep this tab open, or enable browser storage before reloading.'); }
+  };
 
   const add = () => {
     const s = normalizeSymbol(input);
     if (!s) return;
-    if (!list.includes(s)) setList([...list, s]);
+    if (!list.includes(s) && list.length < 30) update([...list, s]);
     setInput('');
   };
 
-  const remove = (s: string) => setList(list.filter(x => x !== s));
+  const remove = (s: string) => update(list.filter(x => x !== s));
 
   return (
     <div className="premium-card p-4 h-full flex flex-col">
@@ -61,6 +70,8 @@ const QuickWatchlist = () => {
         </button>
       </div>
 
+      {saveError && <p role="alert" className="text-[11px] text-destructive mb-3 leading-relaxed">{saveError}</p>}
+      {list.length >= 30 && <p role="status" className="text-[11px] text-muted-foreground mb-3">Watchlist full (30 stocks). Remove one to add another.</p>}
       <div className="flex-1 overflow-y-auto space-y-1 -mx-1 px-1">
         {list.map(sym => {
           const q = data.get(sym);
