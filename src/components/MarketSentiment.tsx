@@ -7,7 +7,7 @@ const tone = (score: number | null) => score === null ? 'text-muted-foreground' 
 const barColor = (score: number) => score >= 56 ? 'bg-success' : score <= 44 ? 'bg-destructive' : 'bg-warning';
 const BLURB: Record<SentimentLabel, string> = {
   Bullish: 'Most signals point the same way, up.', Constructive: 'More signals lean positive than negative.', Neutral: 'Signals are balanced. No clear lean.',
-  Cautious: 'More signals lean negative than positive.', Bearish: 'Most signals point the same way, down.', Unavailable: 'Not enough live data to score the market.',
+  Cautious: 'More signals lean negative than positive.', Bearish: 'Most signals point the same way, down.', Unavailable: 'Not enough usable source data to calculate a score.',
 };
 
 /** Half-circle gauge. Arc is a red-to-green gradient, the needle sits at the score. */
@@ -51,7 +51,7 @@ const MarketSentiment = () => {
     <div className="relative border-b border-border/70 p-5 md:p-7">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ background: 'radial-gradient(60% 120% at 12% 0%, hsl(var(--success) / 0.10), transparent 60%), radial-gradient(50% 100% at 95% 100%, hsl(var(--destructive) / 0.08), transparent 60%)' }} />
       <div className="relative flex flex-wrap items-start justify-between gap-4">
-        <div><div className="section-eyebrow">Market pulse / India</div><h2 id="sentiment-title" className="font-display mt-1 text-2xl font-semibold tracking-tight">Market sentiment</h2><p className="mt-1 text-[13px] text-muted-foreground">Six live signals, one score. Every number below comes from a public feed.</p></div>
+        <div><div className="section-eyebrow">Market pulse / India</div><h2 id="sentiment-title" className="font-display mt-1 text-2xl font-semibold tracking-tight">Market sentiment</h2><p className="mt-1 text-[13px] text-muted-foreground">Up to six sourced inputs, one calculated score. Inputs may be delayed or from different dates.</p></div>
         <button type="button" onClick={() => void load()} disabled={refreshing} aria-label="Refresh market sentiment" className="flex items-center gap-1.5 rounded-lg border border-border bg-background/50 px-2.5 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"><RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Refresh</button>
       </div>
       <div className="relative mt-6 grid items-center gap-6 md:grid-cols-[minmax(240px,300px)_1fr]">
@@ -66,7 +66,7 @@ const MarketSentiment = () => {
             {result.topDriver && <span className="rounded-full bg-success/10 px-3 py-1 text-success">Biggest lift: {result.topDriver.label}</span>}
             {result.topDrag && <span className="rounded-full bg-destructive/10 px-3 py-1 text-destructive">Biggest drag: {result.topDrag.label}</span>}
           </div>}
-          {result && <p className="text-[11px] text-muted-foreground">{result.signals.length} of 6 signals live{result.missing.length ? ` (unavailable: ${result.missing.map(m => m.label).join(', ')}; weights rebalanced)` : ''} · Updated {new Date(result.updatedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST</p>}
+          {result && <p className="text-[11px] text-muted-foreground">{result.signals.length} of 6 inputs available{result.missing.length ? ` (unavailable: ${result.missing.map(m => m.label).join(', ')}; weights rebalanced)` : ''} · Calculated {new Date(result.updatedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST</p>}
         </div>
       </div>
     </div>
@@ -77,7 +77,7 @@ const MarketSentiment = () => {
         <tbody>
           {rows.map(({ key, signal }) => <tr key={key} className="border-b border-border/50 last:border-0">
             <td className="px-5 py-3 font-medium md:px-7">{SIGNAL_LABELS[key]}</td>
-            <td className="py-3 pr-4 text-muted-foreground" title={signal?.source}>{loading ? '…' : signal ? signal.reading : 'No live data right now'}</td>
+            <td className="py-3 pr-4 text-muted-foreground" title={signal?.source}>{loading ? '…' : signal ? signal.reading : 'No usable source data'}</td>
             <td className="py-3 pr-4"><div className="flex items-center gap-2"><span className={`w-7 font-mono tabular-nums ${signal ? tone(signal.score) : 'text-muted-foreground'}`}>{signal ? signal.score : '—'}</span><span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><span className="absolute inset-y-0 left-1/2 w-px bg-foreground/25" />{signal && <span className={`absolute inset-y-0 rounded-full ${barColor(signal.score)}`} style={signal.score >= 50 ? { left: '50%', width: `${signal.score - 50}%` } : { right: '50%', width: `${50 - signal.score}%` }} />}</span></div></td>
             <td className="px-5 py-3 text-right font-mono tabular-nums text-muted-foreground md:px-7">{Math.round(WEIGHTS[key] * 100)}%</td>
           </tr>)}
@@ -85,7 +85,7 @@ const MarketSentiment = () => {
       </table>
     </div>
 
-    <p className="border-t border-border/70 px-5 py-4 text-[10.5px] leading-relaxed text-muted-foreground md:px-7">A 0-100 read where 50 is neutral. Breadth is weighted by index weight; trend uses NIFTY against its 20 and 50-day averages; low volatility scores higher; flows blend FII and DII 5-day net buying; global cues cover the S&amp;P 500, Nikkei, Hang Seng, Brent and USD/INR; news scores macro and market-wide headlines only, with negation and recency decay. Free feeds can be delayed. Context, not a forecast or investment advice.</p>
+    <p className="border-t border-border/70 px-5 py-4 text-[10.5px] leading-relaxed text-muted-foreground md:px-7">A 0-100 read where 50 is neutral. Breadth is weighted by index weight; trend uses NIFTY against its 20 and 50-day averages; low volatility scores higher; flows blend FII and DII 5-day net buying; global cues cover the S&amp;P 500, Nikkei, Hang Seng, Brent and USD/INR; news scores macro and market-wide headlines only, with negation and recency decay. The score is calculated here, not supplied by an exchange. Institutional flows use a periodically updated snapshot; other feeds may be delayed. Source dates differ. Context, not a forecast or investment advice.</p>
   </section>;
 };
 export default MarketSentiment;
