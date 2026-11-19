@@ -29,7 +29,7 @@ const Index = () => (
   <div className="min-h-screen bg-background text-foreground">
     <Seo
       title="StockSense — Indian Stock Market Dashboard for NSE & BSE"
-      description="StockSense is a free Indian stock market dashboard: live NSE and BSE quotes, top movers, sector outlooks, market breadth, macro events and news in one clear view."
+      description="StockSense is a free Indian stock market dashboard: source-aware NSE and BSE quotes, top movers, sector outlooks, market breadth, macro events and news in one clear view."
       path="/"
     />
     <div className="fixed top-0 left-0 right-0 z-50">
@@ -55,7 +55,7 @@ const Index = () => (
             <PremiumTopMovers limit={8} />
           </div>
           <div className="min-w-0">
-            <SectionHead title="Live news" to="/news" />
+            <SectionHead title="Market news" to="/news" />
             <PremiumNewsFeed />
           </div>
         </section>
