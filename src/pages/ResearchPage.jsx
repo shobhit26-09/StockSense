@@ -67,4 +67,4 @@ export default function ResearchPage() {
       </section> : <section className="researchWelcome"><span className="researchWelcomeIcon"><BookOpen size={30}/></span><p className="researchEyebrow">FROM WATCHING TO UNDERSTANDING</p><h2>A useful place to return to.</h2><p>Your watchlist should be more than changing numbers. Choose a company, record what you need to learn, and leave yourself a clear next step.</p><div><span>01</span><p><b>Choose a company.</b> Search by name or ticker. No stocks are preselected for you.</p></div><div><span>02</span><p><b>Keep evidence separate from opinion.</b> Quote availability and provider source are shown beside your own notes.</p></div><div><span>03</span><p><b>Come back with a question.</b> Save your next check and download a copy before switching devices.</p></div><Link to="/screener">Explore the screener <ArrowUpRight size={14}/></Link></section>}
     </div><p className="researchDisclaimer">StockSense does not provide investment advice. This workspace does not assess suitability, recommend a trade or guarantee data accuracy. Verify important facts with the exchange or issuer.</p>
   </main></div>;
-  }
+}
