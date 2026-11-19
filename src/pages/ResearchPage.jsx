@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { ArrowDownToLine, ArrowUpRight, BookOpen, RefreshCw, Search, ShieldCheck, Star, X } from 'lucide-react';
 import PremiumNavbar from '@/components/PremiumNavbar';
 import Seo from '@/components/Seo';
-import { loadWatchlistState, normalizeSymbol, saveWatchlist, subscribeWatchlist } from '@/lib/watchlist';
+import { loadWatchlistState, normalizeSymbol, saveWatchlist, subscribeWatchlist, WATCHLIST_KEY, WATCHLIST_EVENT } from '@/lib/watchlist';
 import { searchStocks } from '@/services/stockSearchService';
 import { fetchMultipleQuotesRacing } from '@/services/multiSourceDataService';
-import { emptyResearch, exportResearch, quoteState, quoteDeadline, readResearch, writeResearch } from '@/lib/research.js';
+import { emptyResearch, exportResearch, quoteState, quoteDeadline, readResearch, writeResearch, parseResearchBackup, restoreResearchBackup, MAX_RESEARCH_BACKUP_BYTES } from '@/lib/research.js';
 import './research.css';
 
 const money = value => value.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
@@ -18,7 +18,8 @@ export default function ResearchPage() {
   const [quotes, setQuotes] = useState(new Map()), [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(''), [selected, setSelected] = useState(initial.symbols[0] || ''), [filter, setFilter] = useState('all');
   const [now, setNow] = useState(Date.now());
-  const request = useRef(0);
+  const request = useRef(0), importRead = useRef(0);
+  const [pendingImport, setPendingImport] = useState(null), [importError, setImportError] = useState(''), [importMessage, setImportMessage] = useState('');
   const matches = query.trim() ? searchStocks(query, 6) : [];
   useEffect(() => subscribeWatchlist(() => { const state = loadWatchlistState(); setSymbols(state.symbols); setWatchError(state.error); }), []);
   useEffect(() => { if (!symbols.includes(selected)) setSelected(symbols[0] || ''); }, [symbols, selected]);
@@ -43,11 +44,31 @@ export default function ResearchPage() {
   const note = notes[selected] || emptyResearch();
   function edit(change) { if (!notes[selected] && Object.keys(notes).length >= 200) { setNoteError('This notebook has reached 200 companies. Download your research before starting a new notebook.'); return; } const next = { ...notes, [selected]: { ...note, ...change } }; setNotes(next); setNoteError(writeResearch({ setItem: (key, value) => localStorage.setItem(key, value) }, next)); }
   function download() { const url = URL.createObjectURL(new Blob([exportResearch(symbols, notes, quotes)], { type: 'application/json' })); const a = document.createElement('a'); a.href = url; a.download = 'stocksense-research.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  async function chooseBackup(event) {
+    const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    const current = ++importRead.current; setPendingImport(null); setImportError(''); setImportMessage('');
+    try {
+      if (file.size > MAX_RESEARCH_BACKUP_BYTES) throw new Error('Choose a StockSense research backup smaller than 4 MB.');
+      const backup = parseResearchBackup(await file.text());
+      if (current === importRead.current) setPendingImport(backup);
+    } catch (error) { if (current === importRead.current) setImportError(error.message || 'The backup could not be read. Your notebook has not changed.'); }
+  }
+  function confirmRestore() {
+    if (!pendingImport) return;
+    request.current++; setLoading(false); setQuotes(new Map());
+    const warning = restoreResearchBackup({ getItem: key => localStorage.getItem(key), setItem: (key, value) => localStorage.setItem(key, value), removeItem: key => localStorage.removeItem(key) }, pendingImport, WATCHLIST_KEY);
+    setSymbols(pendingImport.symbols); setNotes(pendingImport.notes); setSelected(pendingImport.symbols[0] || ''); setFilter('all'); setQuery(''); setWatchError(''); setNoteError(warning); setPendingImport(null);
+    if (!warning) window.dispatchEvent(new CustomEvent(WATCHLIST_EVENT));
+    setImportMessage(warning ? '' : 'Notebook restored on this device. Quotes will be requested again, not restored from the backup.');
+  }
   const quote = quotes.get(selected), state = quoteState(quote, now);
   const visible = symbols.filter(symbol => filter === 'all' || (notes[symbol]?.status || 'researching') === filter);
   const company = selected ? searchStocks(selected.replace(/\.(NS|BO)$/, ''), 6).find(item => item.symbol === selected) : null;
   return <div className="researchPage min-h-screen bg-background text-foreground"><Seo title="Your research workspace | StockSense" description="A browser-local watchlist and research notebook with quote-source states, useful next questions and no trade execution." path="/research" /><PremiumNavbar /><main className="researchMain">
-    <header className="researchHeading"><div><p className="researchEyebrow"><BookOpen size={14}/> YOUR RESEARCH WORKSPACE</p><h1>Know why it's on your list.</h1><p>Save a stock. Record the reason. Keep the next question in view, without confusing a market move with a decision.</p></div><button className="researchButton" onClick={download} disabled={!symbols.length}><ArrowDownToLine size={15}/> Download research</button></header>
+    <header className="researchHeading"><div><p className="researchEyebrow"><BookOpen size={14}/> YOUR RESEARCH WORKSPACE</p><h1>Know why it's on your list.</h1><p>Save a stock. Record the reason. Keep the next question in view, without confusing a market move with a decision.</p></div><div className="researchBackupActions"><label className="researchButton researchRestoreLabel">Restore research<input type="file" accept=".json,application/json" aria-label="Choose StockSense research backup" onChange={chooseBackup}/></label><button className="researchButton" onClick={download} disabled={!symbols.length && !Object.keys(notes).length}><ArrowDownToLine size={15}/> Download research</button></div></header>
+    {importError && <p role="alert" className="researchWarning">{importError}</p>}
+    {importMessage && <p role="status" className="researchImportStatus">{importMessage}</p>}
+    {pendingImport && <section className="researchImportReview" aria-labelledby="restore-title"><h2 id="restore-title">Replace this notebook?</h2><p>This backup contains {pendingImport.symbols.length} watchlist stocks and {Object.keys(pendingImport.notes).length} sets of notes, including any saved for stocks outside the watchlist. It will replace this device's watchlist and research notes. Download your current research first if you want to keep it.</p><p>Imported prices are not treated as current quotes. New quotes will be requested from the providers.</p><div><button className="researchButton" onClick={() => { importRead.current++; setPendingImport(null); }}>Cancel restore</button><button className="researchButton" onClick={confirmRestore}>Replace notebook</button></div></section>}
     <div className="researchNotice"><ShieldCheck size={17}/><p>Research only. No orders or broker connection. Free feeds may be delayed; received time is not exchange trade time. Your notes and watchlist stay in this browser, not in your account.</p></div>
     {(watchError || noteError) && <div role="alert" className="researchWarning">{watchError && <p>{watchError}</p>}{noteError && <p>{noteError}</p>}</div>}
     <div className="researchGrid"><aside className="researchList" aria-labelledby="research-list-title"><div className="researchListHead"><h2 id="research-list-title">Your watchlist <span>{symbols.length}/30</span></h2><button onClick={refresh} disabled={loading || !symbols.length} aria-label="Refresh watchlist quotes"><RefreshCw size={15} className={loading ? 'researchSpinning' : ''}/></button></div>
@@ -67,4 +88,4 @@ export default function ResearchPage() {
       </section> : <section className="researchWelcome"><span className="researchWelcomeIcon"><BookOpen size={30}/></span><p className="researchEyebrow">FROM WATCHING TO UNDERSTANDING</p><h2>A useful place to return to.</h2><p>Your watchlist should be more than changing numbers. Choose a company, record what you need to learn, and leave yourself a clear next step.</p><div><span>01</span><p><b>Choose a company.</b> Search by name or ticker. No stocks are preselected for you.</p></div><div><span>02</span><p><b>Keep evidence separate from opinion.</b> Quote availability and provider source are shown beside your own notes.</p></div><div><span>03</span><p><b>Come back with a question.</b> Save your next check and download a copy before switching devices.</p></div><Link to="/screener">Explore the screener <ArrowUpRight size={14}/></Link></section>}
     </div><p className="researchDisclaimer">StockSense does not provide investment advice. This workspace does not assess suitability, recommend a trade or guarantee data accuracy. Verify important facts with the exchange or issuer.</p>
   </main></div>;
-}
+                                                                                                                                                                                   }
